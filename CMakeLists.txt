@@ -35,8 +35,9 @@ list(APPEND CMAKE_MODULE_PATH ${BCOS_GATEWAY_CMAKE_DIR})
 #init hunter
 include(HunterGate)
 HunterGate(
-    URL "https://github.com/FISCO-BCOS/hunter/archive/4ba91e1dc10bd74cb757be4ea40d2b3657d808ac.tar.gz"
-    SHA1 "9d92a895063ce5f174593686c5f0b0f52377e39d"
+    URL "https://${FETCH_URL_BASE}/FISCO-BCOS/hunter/archive/d656f5be7b835c07fb50d97623d48d3c00c69807.tar.gz"
+    SHA1 "cd9421e4aadea1b7f8e86d1b2d9a943060d24c95"
+    FILEPATH "${CMAKE_SOURCE_DIR}/cmake/config.cmake"
 )
 project(bcos-gateway VERSION "3.0.0")
 set(VERSION_SUFFIX "")
@@ -52,25 +53,28 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 # install dependencies
 include(InstallBcosFrameworkDependencies)
 
+set(NETWORK_TARGET "network")
+set(P2P_TARGET "p2p")
 set(BCOS_GATEWAY_TARGET "bcos-gateway")
+
+hunter_add_package(OpenSSL)
+find_package(OpenSSL REQUIRED)
+
+hunter_add_package(jsoncpp)
+find_package(jsoncpp CONFIG REQUIRED)
 
 add_subdirectory(gateway)
 
+# ut
 if (TESTS)
-    # fetch bcos-test
-    set(BCOS_TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/test/bcos-test)
-    FetchContent_Declare(bcos-test
-    GIT_REPOSITORY https://${FETCH_URL_BASE}/FISCO-BCOS/bcos-test.git
-    GIT_TAG dev
-    SOURCE_DIR ${BCOS_TEST_DIR})
-    FetchContent_MakeAvailable(bcos-test)
-    
+    include(InstallBcosCryptoDependencies)
     enable_testing()
     set(CTEST_OUTPUT_ON_FAILURE TRUE)
     add_subdirectory(test)
 endif()
 
 include(InstallConfig)
+
 # install bcos gateway target
 install(
     TARGETS ${BCOS_GATEWAY_TARGET}
@@ -80,6 +84,25 @@ install(
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
+
+install(
+    TARGETS ${NETWORK_TARGET}
+    EXPORT "${TARGETS_EXPORT_NAME}"
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+)
+
+install(
+    TARGETS ${P2P_TARGET}
+    EXPORT "${TARGETS_EXPORT_NAME}"
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+)
+
 # install the include files for hash
 include(InstallInclude)
 
