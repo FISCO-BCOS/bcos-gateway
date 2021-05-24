@@ -18,13 +18,12 @@ namespace gateway {
 #define SERVICE_LOG(LEVEL) LOG(LEVEL) << "[P2PService][Service] "
 
 struct P2PSessionInfo {
-  NodeInfo nodeInfo;
+  P2PInfo p2pInfo;
   NodeIPEndpoint nodeIPEndpoint;
-  P2PSessionInfo(NodeInfo const &_nodeInfo,
-                 NodeIPEndpoint const &_nodeIPEndpoint)
-      : nodeInfo(_nodeInfo), nodeIPEndpoint(_nodeIPEndpoint) {}
+  P2PSessionInfo(P2PInfo const &_p2pInfo, NodeIPEndpoint const &_nodeIPEndpoint)
+      : p2pInfo(_p2pInfo), nodeIPEndpoint(_nodeIPEndpoint) {}
 
-  P2PNodeID const &p2pNodeID() const { return nodeInfo.nodeID; }
+  P2pID const &p2pID() const { return p2pInfo.p2pID; }
 };
 using P2PSessionInfos = std::vector<P2PSessionInfo>;
 

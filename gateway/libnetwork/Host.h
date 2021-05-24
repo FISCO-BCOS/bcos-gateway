@@ -65,7 +65,7 @@ public:
 
   virtual void
   asyncConnect(NodeIPEndpoint const &_nodeIPEndpoint,
-               std::function<void(NetworkException, NodeInfo const &,
+               std::function<void(NetworkException, P2PInfo const &,
                                   std::shared_ptr<SessionFace>)>
                    callback);
 
@@ -77,13 +77,13 @@ public:
     m_listenPort = port;
   }
 
-  virtual std::function<void(NetworkException, NodeInfo const &,
+  virtual std::function<void(NetworkException, P2PInfo const &,
                              std::shared_ptr<SessionFace>)>
   connectionHandler() const {
     return m_connectionHandler;
   }
   virtual void
-  setConnectionHandler(std::function<void(NetworkException, NodeInfo const &,
+  setConnectionHandler(std::function<void(NetworkException, P2PInfo const &,
                                           std::shared_ptr<SessionFace>)>
                            connectionHandler) {
     m_connectionHandler = connectionHandler;
@@ -129,7 +129,7 @@ public:
     m_messageFactory = _messageFactory;
   }
 
-  virtual NodeInfo nodeInfo();
+  virtual P2PInfo p2pInfo();
 
 private:
   /// obtain the common name from the subject:
@@ -145,7 +145,7 @@ private:
   newVerifyCallback(std::shared_ptr<std::string> nodeIDOut);
 
   /// obtain nodeInfo from given vector
-  void obtainNodeInfo(NodeInfo &info, std::string const &node_info);
+  void obtainNodeInfo(P2PInfo &info, std::string const &node_info);
 
   /// server calls handshakeServer to after handshake, mainly calls
   /// RLPxHandshake to obtain informations(client version, caps, etc),start peer
@@ -154,16 +154,16 @@ private:
                        std::shared_ptr<std::string> endpointPublicKey,
                        std::shared_ptr<SocketFace> socket);
 
-  void startPeerSession(NodeInfo const &nodeInfo,
+  void startPeerSession(P2PInfo const &p2pInfo,
                         std::shared_ptr<SocketFace> const &socket,
-                        std::function<void(NetworkException, NodeInfo const &,
+                        std::function<void(NetworkException, P2PInfo const &,
                                            std::shared_ptr<SessionFace>)>
                             handler);
 
   void handshakeClient(const boost::system::error_code &error,
                        std::shared_ptr<SocketFace> socket,
                        std::shared_ptr<std::string> endpointPublicKey,
-                       std::function<void(NetworkException, NodeInfo const &,
+                       std::function<void(NetworkException, P2PInfo const &,
                                           std::shared_ptr<SessionFace>)>
                            callback,
                        NodeIPEndpoint _nodeIPEndpoint,
@@ -195,7 +195,7 @@ private:
   std::string m_listenHost = "";
   uint16_t m_listenPort = 0;
 
-  std::function<void(NetworkException, NodeInfo const &,
+  std::function<void(NetworkException, P2PInfo const &,
                      std::shared_ptr<SessionFace>)>
       m_connectionHandler;
 
@@ -206,7 +206,7 @@ private:
 
   std::shared_ptr<std::thread> m_hostThread;
 
-  NodeInfo m_nodeInfo;
+  P2PInfo m_p2pInfo;
 };
 } // namespace gateway
 

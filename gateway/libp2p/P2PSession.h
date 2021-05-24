@@ -50,9 +50,9 @@ public:
     m_session = session;
   }
 
-  virtual P2PNodeID p2pNodeID() { return m_nodeInfo.nodeID; }
-  virtual void setNodeInfo(NodeInfo const &nodeInfo) { m_nodeInfo = nodeInfo; }
-  virtual NodeInfo const &nodeInfo() const & { return m_nodeInfo; }
+  virtual P2pID p2pID() { return m_p2pInfo.p2pID; }
+  virtual void setP2PInfo(P2PInfo const &p2pInfo) { m_p2pInfo = p2pInfo; }
+  virtual P2PInfo const &p2pInfo() const & { return m_p2pInfo; }
 
   virtual std::weak_ptr<Service> service() { return m_service; }
   virtual void setService(std::weak_ptr<Service> service) {
@@ -61,8 +61,8 @@ public:
 
 private:
   SessionFace::Ptr m_session;
-  /// gateway nodeID info;
-  NodeInfo m_nodeInfo;
+  /// gateway p2p info;
+  P2PInfo m_p2pInfo;
 
   std::weak_ptr<Service> m_service;
   std::shared_ptr<boost::asio::deadline_timer> m_timer;

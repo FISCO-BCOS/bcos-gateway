@@ -58,16 +58,16 @@ void P2PSession::heartBeat() {
       auto message = std::dynamic_pointer_cast<P2PMessage>(
           service->messageFactory()->buildMessage());
       message->setPacketType(MessageType::Heartbeat);
-      uint32_t statusSeq = 0;
-      boost::asio::detail::socket_ops::host_to_network_long(
-          service->statusSeq());
+      uint32_t statusSeq =
+          boost::asio::detail::socket_ops::host_to_network_long(
+              service->statusSeq());
 
       message->setPayload(bytesConstRef((byte *)&statusSeq, 4));
 
       SESSION_LOG(DEBUG) << LOG_DESC("P2PSession onHeartBeat")
-                         << LOG_KV("nodeID", m_nodeInfo.nodeID)
-                         << LOG_KV("name", m_session->nodeIPEndpoint())
-                         << LOG_KV("statusSeq", statusSeq);
+                         << LOG_KV("p2pid", m_p2pInfo.p2pID)
+                         << LOG_KV("endpoint", m_session->nodeIPEndpoint())
+                         << LOG_KV("statusSeq", service->statusSeq());
 
       m_session->asyncSendMessage(message);
     }
