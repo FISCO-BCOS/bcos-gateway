@@ -48,34 +48,32 @@ public:
   using Ptr = std::shared_ptr<P2PInterface>;
   virtual ~P2PInterface(){};
 
-  virtual P2PNodeID id() const = 0;
+  virtual void start() = 0;
+  virtual void stop() = 0;
+
+  virtual P2pID id() const = 0;
 
   virtual std::shared_ptr<P2PMessage>
-  sendMessageByNodeID(P2PNodeID nodeID,
-                      std::shared_ptr<P2PMessage> message) = 0;
+  sendMessageByNodeID(P2pID nodeID, std::shared_ptr<P2PMessage> message) = 0;
 
-  virtual void asyncSendMessageByNodeID(P2PNodeID nodeID,
+  virtual void asyncSendMessageByNodeID(P2pID nodeID,
                                         std::shared_ptr<P2PMessage> message,
                                         CallbackFuncWithSession callback,
                                         Options options = Options()) = 0;
-
-  virtual void
-  asyncMulticastMessageByNodeIDList(P2PNodeIDs nodeIDs,
-                                    std::shared_ptr<P2PMessage> message) = 0;
 
   virtual void asyncBroadcastMessage(std::shared_ptr<P2PMessage> message,
                                      Options options) = 0;
 
   virtual P2PSessionInfos sessionInfos() = 0;
 
-  virtual bool isConnected(P2PNodeID const &_nodeID) const = 0;
+  virtual bool isConnected(P2pID const &_nodeID) const = 0;
 
   virtual std::shared_ptr<Host> host() = 0;
 
   virtual std::shared_ptr<MessageFactory> messageFactory() = 0;
 
   virtual std::shared_ptr<P2PSession>
-  getP2PSessionByNodeId(P2PNodeID const &_nodeID) = 0;
+  getP2PSessionByNodeId(P2pID const &_nodeID) = 0;
 };
 
 } // namespace gateway

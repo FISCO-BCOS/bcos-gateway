@@ -75,8 +75,8 @@ enum P2PExceptionType {
 };
 
 //
-using P2PNodeID = std::string;
-using P2PNodeIDs = std::set<std::string>;
+using P2pID = std::string;
+using P2pIDs = std::set<std::string>;
 struct Options {
   Options() {}
   Options(uint32_t _timeout) : timeout(_timeout) {}
@@ -85,8 +85,8 @@ struct Options {
 };
 
 /// node info obtained from the certificate
-struct NodeInfo {
-  P2PNodeID nodeID;
+struct P2PInfo {
+  P2pID p2pID;
   std::string agencyName;
   std::string nodeName;
 };
