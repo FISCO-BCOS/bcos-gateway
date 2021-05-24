@@ -21,6 +21,7 @@
 
 #define GATEWAY_LOG(LEVEL) LOG(LEVEL) << LOG_BADGE("[Gateway][Gateway]")
 #define GATEWAY_CONFIG_LOG(LEVEL) LOG(LEVEL) << LOG_BADGE("[Gateway][Config]")
+#define GATEWAY_FACTORY_LOG(LEVEL) LOG(LEVEL) << LOG_BADGE("[Gateway][Factory]")
 #define INITIALIZER_LOG(LEVEL) LOG(LEVEL) << LOG_BADGE("[Gateway][Initializer]")
 #define NODE_MANAGER_LOG(LEVEL)                                                \
-  LOG(LEVEL) << LOG_BADGE("[Gateway][NodeManager]")
+  LOG(LEVEL) << LOG_BADGE("[Gateway][GatewayNodeManager]")
