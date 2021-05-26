@@ -52,6 +52,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # install dependencies
 include(InstallBcosFrameworkDependencies)
+include(InstallBcosCryptoDependencies)
 
 set(NETWORK_TARGET "network")
 set(P2P_TARGET "p2p")
@@ -67,7 +68,6 @@ add_subdirectory(gateway)
 
 # ut
 if (TESTS)
-    include(InstallBcosCryptoDependencies)
     enable_testing()
     set(CTEST_OUTPUT_ON_FAILURE TRUE)
     add_subdirectory(test)

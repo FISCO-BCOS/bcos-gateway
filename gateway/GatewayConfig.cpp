@@ -53,14 +53,14 @@ void GatewayConfig::hostAndPort2Endpoint(const std::string &_host,
         << LOG_DESC("not valid host value") << LOG_KV("host", _host);
     BOOST_THROW_EXCEPTION(
         InvalidParameter() << errinfo_comment(
-            "GatewayConfig: not valid host value, host=" + _host));
+            "GatewayConfig: the host is invalid, host=" + _host));
   }
 
   if (!isValidPort(port)) {
     GATEWAY_CONFIG_LOG(ERROR)
-        << LOG_DESC("not valid port value") << LOG_KV("port", port);
+        << LOG_DESC("the port is not valid") << LOG_KV("port", port);
     BOOST_THROW_EXCEPTION(InvalidParameter() << errinfo_comment(
-                              "GatewayConfig: not valid port value, port=" +
+                              "GatewayConfig: the port is invalid, port=" +
                               std::to_string(port)));
   }
 
@@ -68,11 +68,11 @@ void GatewayConfig::hostAndPort2Endpoint(const std::string &_host,
   boost::asio::ip::address ip_address = boost::asio::ip::make_address(ip, ec);
   if (ec.value() != 0) {
     GATEWAY_CONFIG_LOG(ERROR)
-        << LOG_DESC("not valid host value, make_address error")
+        << LOG_DESC("the host is invalid, make_address error")
         << LOG_KV("host", _host);
     BOOST_THROW_EXCEPTION(
         InvalidParameter() << errinfo_comment(
-            "GatewayConfig: not valid host value make_address error, host=" +
+            "GatewayConfig: the host is invalid make_address error, host=" +
             _host));
   }
 
@@ -117,16 +117,12 @@ void GatewayConfig::parseConnectedJson(
     BOOST_THROW_EXCEPTION(e);
   }
 }
-void GatewayConfig::parseConnectedFile(
-    const std::string &_file, std::set<NodeIPEndpoint> &_nodeIPEndpointSet) {
-  boost::filesystem::path p(_file);
-  auto content = readContentsToString(boost::filesystem::path(_file));
-  if (content && !content->empty()) {
-    return parseConnectedJson(*content.get(), _nodeIPEndpointSet);
-  }
-}
 
-/// loads configuration items from the configuration file
+/**
+ * @brief: loads configuration items from the config.ini
+ * @param _configPath: config.ini path
+ * @return void
+ */
 void GatewayConfig::initConfig(std::string const &_configPath) {
   try {
     boost::property_tree::ptree pt;
@@ -175,7 +171,16 @@ void GatewayConfig::initP2PConfig(const boost::property_tree::ptree &_pt) {
 
   // load p2p connected nodes
   std::set<NodeIPEndpoint> nodes;
-  parseConnectedFile(path + "/" + file, nodes);
+  auto jsonContent =
+      readContentsToString(boost::filesystem::path(path + "/" + file));
+  if (!jsonContent || jsonContent->empty()) {
+    BOOST_THROW_EXCEPTION(
+        InvalidParameter() << errinfo_comment(
+            "initP2PConfig: unable to read nodes json file, path=" +
+            (path + "/" + file)));
+  }
+
+  parseConnectedJson(*jsonContent.get(), nodes);
 
   m_smSSL = smSSL;
   m_listenIP = listenIP;
@@ -216,34 +221,21 @@ void GatewayConfig::initCertConfig(const boost::property_tree::ptree &_pt) {
                            << LOG_KV("node_cert", nodeCertFile)
                            << LOG_KV("node_key", nodeKeyFile);
 
-  auto caCertContent =
-      readContentsToString(boost::filesystem::path(caCertFile));
-  if (!caCertContent || caCertContent->empty()) {
-    BOOST_THROW_EXCEPTION(
-        InvalidParameter() << errinfo_comment(
-            "initCertConfig: unable to load ca cert, path=" + caCertFile));
-  }
-  auto nodeCertContent =
-      readContentsToString(boost::filesystem::path(nodeCertFile));
-  if (!nodeCertContent || nodeCertContent->empty()) {
-    BOOST_THROW_EXCEPTION(
-        InvalidParameter() << errinfo_comment(
-            "initCertConfig: unable to load node cert, path=" + nodeCertFile));
-  }
-  auto nodeKeyContent =
-      readContentsToString(boost::filesystem::path(nodeKeyFile));
-  if (!nodeKeyContent || nodeKeyContent->empty()) {
-    BOOST_THROW_EXCEPTION(
-        InvalidParameter() << errinfo_comment(
-            "initCertConfig: unable to load node key, path=" + nodeKeyFile));
-  }
+  checkFileExist(caCertFile);
+  checkFileExist(nodeCertFile);
+  checkFileExist(nodeKeyFile);
 
   CertConfig certConfig;
-  certConfig.caCert = *caCertContent.get();
-  certConfig.nodeCert = *nodeCertContent.get();
-  certConfig.nodeKey = *nodeKeyContent.get();
+  certConfig.caCert = caCertFile;
+  certConfig.nodeCert = nodeCertFile;
+  certConfig.nodeKey = nodeKeyFile;
 
   m_certConfig = certConfig;
+
+  GATEWAY_CONFIG_LOG(INFO) << LOG_DESC("initCertConfig")
+                           << LOG_KV("ca", certConfig.caCert)
+                           << LOG_KV("node_cert", certConfig.nodeCert)
+                           << LOG_KV("node_key", certConfig.nodeKey);
 }
 
 // loads sm ca configuration items from the configuration file
@@ -278,64 +270,36 @@ void GatewayConfig::initSMCertConfig(const boost::property_tree::ptree &_pt) {
       caPath + "/" +
       _pt.get<std::string>("cert.sm_ennode_key", "sm_ennode.key");
 
-  GATEWAY_CONFIG_LOG(INFO) << LOG_DESC("initSMCertConfig")
-                           << LOG_KV("ca_path", caPath)
-                           << LOG_KV("sm_ca_cert", smCaCertFile)
-                           << LOG_KV("sm_node_cert", smNodeCertFile)
-                           << LOG_KV("sm_node_key", smNodeKeyFile)
-                           << LOG_KV("sm_ennode_cert", smEnNodeCertFile)
-                           << LOG_KV("sm_ennode_key", smEnNodeKeyFile);
-
-  auto smCaCertContent =
-      readContentsToString(boost::filesystem::path(smCaCertFile));
-  if (!smCaCertContent || smCaCertContent->empty()) {
-    BOOST_THROW_EXCEPTION(
-        InvalidParameter() << errinfo_comment(
-            "initCertConfig: unable to load sm ca cert, path=" + smCaCertFile));
-  }
-
-  auto smNodeCertContent =
-      readContentsToString(boost::filesystem::path(smNodeCertFile));
-  if (!smNodeCertContent || smNodeCertContent->empty()) {
-    BOOST_THROW_EXCEPTION(
-        InvalidParameter() << errinfo_comment(
-            "initSMCertConfig: unable to load sm node cert, path=" +
-            smNodeCertFile));
-  }
-
-  auto smNodeKeyContent =
-      readContentsToString(boost::filesystem::path(smNodeKeyFile));
-  if (!smNodeKeyContent || smNodeKeyContent->empty()) {
-    BOOST_THROW_EXCEPTION(
-        InvalidParameter() << errinfo_comment(
-            "initSMCertConfig: unable to load sm node key, path=" +
-            smNodeKeyFile));
-  }
-
-  auto smEnNodeCertContent =
-      readContentsToString(boost::filesystem::path(smEnNodeCertFile));
-  if (!smEnNodeCertContent || smEnNodeCertContent->empty()) {
-    BOOST_THROW_EXCEPTION(
-        InvalidParameter() << errinfo_comment(
-            "initSMCertConfig: unable to load sm encrypt node cert, path=" +
-            smEnNodeCertFile));
-  }
-
-  auto smEnNodeKeyContent =
-      readContentsToString(boost::filesystem::path(smEnNodeKeyFile));
-  if (!smEnNodeKeyContent || smEnNodeKeyContent->empty()) {
-    BOOST_THROW_EXCEPTION(
-        InvalidParameter() << errinfo_comment(
-            "initSMCertConfig: unable to load sm encrypt node key, path=" +
-            smEnNodeKeyFile));
-  }
+  checkFileExist(smCaCertFile);
+  checkFileExist(smNodeCertFile);
+  checkFileExist(smNodeKeyFile);
+  checkFileExist(smEnNodeCertFile);
+  checkFileExist(smEnNodeKeyFile);
 
   SMCertConfig smCertConfig;
-  smCertConfig.caCert = *smCaCertContent.get();
-  smCertConfig.nodeCert = *smNodeCertContent.get();
-  smCertConfig.nodeKey = *smNodeKeyContent.get();
-  smCertConfig.enNodeCert = *smEnNodeCertContent.get();
-  smCertConfig.enNodeKey = *smEnNodeKeyContent.get();
+  smCertConfig.caCert = smCaCertFile;
+  smCertConfig.nodeCert = smNodeCertFile;
+  smCertConfig.nodeKey = smNodeKeyFile;
+  smCertConfig.enNodeCert = smEnNodeCertFile;
+  smCertConfig.enNodeKey = smEnNodeKeyFile;
 
   m_smCertConfig = smCertConfig;
+
+  GATEWAY_CONFIG_LOG(INFO) << LOG_DESC("initSMCertConfig")
+                           << LOG_KV("ca_path", caPath)
+                           << LOG_KV("sm_ca_cert", smCertConfig.caCert)
+                           << LOG_KV("sm_node_cert", smCertConfig.nodeCert)
+                           << LOG_KV("sm_node_key", smCertConfig.nodeKey)
+                           << LOG_KV("sm_ennode_cert", smCertConfig.enNodeCert)
+                           << LOG_KV("sm_ennode_key", smCertConfig.enNodeKey);
+}
+
+void GatewayConfig::checkFileExist(const std::string &_path) {
+  auto fileContent = readContentsToString(boost::filesystem::path(_path));
+  if (!fileContent || fileContent->empty()) {
+    BOOST_THROW_EXCEPTION(InvalidParameter() << errinfo_comment(
+                              "checkFileExist: unable to load file content "
+                              " maybe file not exist, path: " +
+                              _path));
+  }
 }

@@ -54,34 +54,34 @@ public:
   };
 
 public:
+  /**
+   * @brief: loads configuration items from the config.ini
+   * @param _configPath: config.ini path
+   * @return void
+   */
+  void initConfig(std::string const &_configPath);
+
+public:
   // check if the port valid
   bool isValidPort(int port);
   void hostAndPort2Endpoint(const std::string &_host,
                             NodeIPEndpoint &_endpoint);
   void parseConnectedJson(const std::string &_json,
                           std::set<NodeIPEndpoint> &_nodeIPEndpointSet);
-  void parseConnectedFile(const std::string &_file,
-                          std::set<NodeIPEndpoint> &_nodeIPEndpointSet);
-
-public:
-  // loads configuration items from the configuration file
-  void initConfig(std::string const &_configPath);
   // loads p2p configuration items from the configuration file
   void initP2PConfig(const boost::property_tree::ptree &_pt);
   // loads ca configuration items from the configuration file
   void initCertConfig(const boost::property_tree::ptree &_pt);
   // loads sm ca configuration items from the configuration file
   void initSMCertConfig(const boost::property_tree::ptree &_pt);
+  // check if file exist, exception will be throw if the file not exist
+  void checkFileExist(const std::string &_path);
 
 public:
-  uint32_t threadPoolSize() { return m_threadPoolSize; }
-  bool smSSL() const { return m_smSSL; }
   std::string listenIP() const { return m_listenIP; }
   uint16_t listenPort() const { return m_listenPort; }
-
-  std::string nodeCert() const {
-    return smSSL() ? certConfig().nodeCert : smCertConfig().nodeCert;
-  }
+  uint32_t threadPoolSize() { return m_threadPoolSize; }
+  bool smSSL() const { return m_smSSL; }
 
   CertConfig certConfig() const { return m_certConfig; }
   SMCertConfig smCertConfig() const { return m_smCertConfig; }
@@ -96,7 +96,7 @@ private:
   std::string m_listenIP;
   // p2p network listen Port
   uint16_t m_listenPort;
-  //
+  // threadPool size
   uint32_t m_threadPoolSize{16};
   // p2p connected nodes host list
   std::set<NodeIPEndpoint> m_connectedNodes;
