@@ -135,11 +135,13 @@ void GatewayConfig::initConfig(std::string const &_configPath) {
     }
   } catch (const std::exception &e) {
     GATEWAY_CONFIG_LOG(ERROR)
+        << LOG_KV("configPath", _configPath)
         << LOG_KV("initConfig error: ", boost::diagnostic_information(e));
     BOOST_THROW_EXCEPTION(e);
   }
 
   GATEWAY_CONFIG_LOG(INFO) << LOG_DESC("initConfig ok!")
+                           << LOG_KV("configPath", _configPath)
                            << LOG_KV("listenIP", m_listenIP)
                            << LOG_KV("listenPort", m_listenPort)
                            << LOG_KV("smSSL", m_smSSL)

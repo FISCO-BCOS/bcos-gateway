@@ -22,6 +22,10 @@ include(SearchTestCases)
 set(TEST_BINARY_NAME test-bcos-gateway)
 config_test_cases("" "${SOURCES}" bin/${TEST_BINARY_NAME} "")
 
+if (BUILD_TEST_EXEC)
+    add_subdirectory(main)
+endif()
+
 add_executable(${TEST_BINARY_NAME} ${SOURCES})
 target_include_directories(${TEST_BINARY_NAME} PRIVATE .)
 find_package(Boost CONFIG REQUIRED unit_test_framework)
