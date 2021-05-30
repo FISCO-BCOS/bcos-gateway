@@ -162,18 +162,18 @@ void Service::onConnect(NetworkException e, P2PInfo const &p2pInfo,
                          << LOG_KV("p2pid", p2pID)
                          << LOG_KV("nodeName", p2pInfo.nodeName)
                          << LOG_KV("endpoint", peer)
-                         << LOG_KV("what", e.what());
+                         << LOG_KV("errorMessage", e.what());
 
     return;
   }
 
-  SERVICE_LOG(TRACE) << LOG_DESC("Service onConnect") << LOG_KV("p2pid", p2pID)
-                     << LOG_KV("endpoint", peer);
+  SERVICE_LOG(INFO) << LOG_DESC("onConnect") << LOG_KV("p2pid", p2pID)
+                    << LOG_KV("endpoint", peer);
 
   RecursiveGuard l(x_sessions);
   auto it = m_sessions.find(p2pID);
   if (it != m_sessions.end() && it->second->actived()) {
-    SERVICE_LOG(TRACE) << "Disconnect duplicate peer" << LOG_KV("p2pid", p2pID);
+    SERVICE_LOG(INFO) << "Disconnect duplicate peer" << LOG_KV("p2pid", p2pID);
     updateStaticNodes(session->socket(), p2pID);
     session->disconnect(DuplicatePeer);
     return;
@@ -286,7 +286,7 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session,
                            << LOG_KV("p2pid", p2pID)
                            << LOG_KV("endpoint", nodeIPEndpoint)
                            << LOG_KV("errorCode", e.errorCode())
-                           << LOG_KV("what", e.what());
+                           << LOG_KV("errorMessage", e.what());
 
       if (p2pSession) {
         p2pSession->stop(UserReason);

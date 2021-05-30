@@ -161,17 +161,26 @@ void GatewayNodeManager::onReceiveStatusSeq(const P2pID &_p2pID,
                                             bool &_statusSeqChanged) {
 
   _statusSeqChanged = true;
-  std::lock_guard<std::mutex> l(x_peerGatewayNodes);
+  {
+    std::lock_guard<std::mutex> l(x_peerGatewayNodes);
 
-  auto it = m_p2pID2Seq.find(_p2pID);
-  if (it != m_p2pID2Seq.end()) {
-    _statusSeqChanged = (_statusSeq != it->second);
+    auto it = m_p2pID2Seq.find(_p2pID);
+    if (it != m_p2pID2Seq.end()) {
+      _statusSeqChanged = (_statusSeq != it->second);
+    }
   }
 
-  NODE_MANAGER_LOG(INFO) << LOG_DESC("onReceiveStatusSeq")
-                         << LOG_KV("p2pid", _p2pID)
-                         << LOG_KV("statusSeq", _statusSeq)
-                         << LOG_KV("seqChanged", _statusSeqChanged);
+  if (_statusSeqChanged) {
+    NODE_MANAGER_LOG(INFO) << LOG_DESC("onReceiveStatusSeq")
+                           << LOG_KV("p2pid", _p2pID)
+                           << LOG_KV("statusSeq", _statusSeq)
+                           << LOG_KV("seqChanged", _statusSeqChanged);
+  } else {
+    NODE_MANAGER_LOG(DEBUG)
+        << LOG_DESC("onReceiveStatusSeq") << LOG_KV("p2pid", _p2pID)
+        << LOG_KV("statusSeq", _statusSeq)
+        << LOG_KV("seqChanged", _statusSeqChanged);
+  }
 }
 
 void GatewayNodeManager::updateNodeIDs(
