@@ -36,7 +36,7 @@ int main(int argc, const char **argv) {
 
   std::string configPath = argv[1];
   if ((configPath == "-h") || (configPath == "--help")) {
-    std::cerr << "./gate-way-exec-mini ./config.ini" << std::endl;
+    std::cerr << "./gateway-exec-mini ./config.ini" << std::endl;
     return -1;
   }
 
