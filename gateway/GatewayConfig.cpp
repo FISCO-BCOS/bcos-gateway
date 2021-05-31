@@ -134,10 +134,15 @@ void GatewayConfig::initConfig(std::string const &_configPath) {
       initCertConfig(pt);
     }
   } catch (const std::exception &e) {
+    boost::filesystem::path full_path(boost::filesystem::current_path());
+
     GATEWAY_CONFIG_LOG(ERROR)
         << LOG_KV("configPath", _configPath)
         << LOG_KV("initConfig error: ", boost::diagnostic_information(e));
-    BOOST_THROW_EXCEPTION(e);
+
+    BOOST_THROW_EXCEPTION(InvalidParameter() << errinfo_comment(
+                              "initConfig: currentPath:" + full_path.string() +
+                              " ,error:" + boost::diagnostic_information(e)));
   }
 
   GATEWAY_CONFIG_LOG(INFO) << LOG_DESC("initConfig ok!")

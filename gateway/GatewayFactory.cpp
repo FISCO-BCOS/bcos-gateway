@@ -41,7 +41,7 @@ void GatewayFactory::initCert2PubHexHandler() {
     do {
       auto certContent = readContentsToString(boost::filesystem::path(_cert));
       if (!certContent || certContent->empty()) {
-        errorMessage = "nable to load cert content, cert: " + _cert;
+        errorMessage = "unable to load cert content, cert: " + _cert;
         break;
       }
 
