@@ -59,7 +59,8 @@ public:
                          std::shared_ptr<SessionFace> session);
   virtual void onDisconnect(NetworkException e, P2PSession::Ptr p2pSession);
   virtual void onMessage(NetworkException e, SessionFace::Ptr session,
-                         Message::Ptr message, P2PSession::Ptr p2pSession);
+                         Message::Ptr message,
+                         std::weak_ptr<P2PSession> p2pSessionWeakPtr);
 
   std::shared_ptr<P2PMessage>
   sendMessageByNodeID(P2pID nodeID,

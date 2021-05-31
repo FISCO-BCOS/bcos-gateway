@@ -32,6 +32,14 @@
 using namespace bcos;
 using namespace bcos::gateway;
 
+P2PSession::P2PSession() {
+  P2PSESSION_LOG(INFO) << "[P2PSession::P2PSession] this=" << this;
+}
+
+P2PSession::~P2PSession() {
+  P2PSESSION_LOG(INFO) << "[P2PSession::~P2PSession] this=" << this;
+}
+
 void P2PSession::start() {
   if (!m_run && m_session) {
     m_run = true;
@@ -64,10 +72,10 @@ void P2PSession::heartBeat() {
 
       message->setPayload(bytesConstRef((byte *)&statusSeq, 4));
 
-      SESSION_LOG(DEBUG) << LOG_DESC("P2PSession onHeartBeat")
-                         << LOG_KV("p2pid", m_p2pInfo.p2pID)
-                         << LOG_KV("endpoint", m_session->nodeIPEndpoint())
-                         << LOG_KV("statusSeq", service->statusSeq());
+      P2PSESSION_LOG(DEBUG) << LOG_DESC("P2PSession onHeartBeat")
+                            << LOG_KV("p2pid", m_p2pInfo.p2pID)
+                            << LOG_KV("endpoint", m_session->nodeIPEndpoint())
+                            << LOG_KV("statusSeq", service->statusSeq());
 
       m_session->asyncSendMessage(message);
     }
@@ -76,7 +84,7 @@ void P2PSession::heartBeat() {
     m_timer = service->host()->asioInterface()->newTimer(HEARTBEAT_INTERVEL);
     m_timer->async_wait([self](boost::system::error_code e) {
       if (e) {
-        SESSION_LOG(TRACE) << "Timer canceled: " << e.message();
+        P2PSESSION_LOG(TRACE) << "Timer canceled: " << e.message();
         return;
       }
 
