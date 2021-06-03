@@ -20,10 +20,13 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum OS X deployment version")
 
 include(FetchContent)
-set(FETCH_URL_BASE "github.com")
+if (NOT DEFINED URL_BASE)
+    set(URL_BASE "github.com")
+    # set(URL_BASE "github.com.cnpmjs.org")
+endif()
 set(BCOS_CMAKE_SCRIPTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bcos-cmake-scripts)
 FetchContent_Declare(bcos-cmake-scripts
-    GIT_REPOSITORY https://${FETCH_URL_BASE}/FISCO-BCOS/bcos-cmake-scripts.git
+    GIT_REPOSITORY https://${URL_BASE}/FISCO-BCOS/bcos-cmake-scripts.git
     GIT_TAG dev
     SOURCE_DIR ${BCOS_CMAKE_SCRIPTS_DIR}
 )
@@ -35,7 +38,7 @@ list(APPEND CMAKE_MODULE_PATH ${BCOS_GATEWAY_CMAKE_DIR})
 #init hunter
 include(HunterGate)
 HunterGate(
-    URL "https://${FETCH_URL_BASE}/FISCO-BCOS/hunter/archive/7268240de829ba351c98d574db9dd7dfddb1ad2e.tar.gz"
+    URL "https://${URL_BASE}/FISCO-BCOS/hunter/archive/7268240de829ba351c98d574db9dd7dfddb1ad2e.tar.gz"
     SHA1 "29a725d3fac8b23f255530b7e40ffb47b34973f9"
     FILEPATH "${CMAKE_SOURCE_DIR}/cmake/config.cmake"
 )
