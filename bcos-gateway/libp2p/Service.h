@@ -24,10 +24,10 @@
  */
 
 #pragma once
-#include "P2PInterface.h"
-#include "P2PSession.h"
-#include "gateway/Gateway.h"
 #include <bcos-framework/interfaces/crypto/KeyFactory.h>
+#include <bcos-gateway/Gateway.h>
+#include <bcos-gateway/libp2p/P2PInterface.h>
+#include <bcos-gateway/libp2p/P2PSession.h>
 
 #include <map>
 #include <memory>

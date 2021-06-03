@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include "Common.h"
-#include "SocketFace.h"
+#include <bcos-gateway/libnetwork/Common.h>
+#include <bcos-gateway/libnetwork/SocketFace.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/beast.hpp>

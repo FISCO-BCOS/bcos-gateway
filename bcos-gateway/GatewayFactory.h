@@ -21,10 +21,10 @@
 
 #pragma once
 
-#include "Gateway.h"
-#include "GatewayConfig.h"
 #include <bcos-framework/interfaces/crypto/KeyFactory.h>
 #include <bcos-framework/interfaces/front/FrontServiceInterface.h>
+#include <bcos-gateway/Gateway.h>
+#include <bcos-gateway/GatewayConfig.h>
 #include <boost/asio/ssl.hpp>
 
 namespace bcos {

@@ -8,7 +8,7 @@
 
 #include <bcos-framework/libutilities/Common.h>
 #include <bcos-framework/libutilities/Exceptions.h>
-#include <gateway/libnetwork/Common.h>
+#include <bcos-gateway/libnetwork/Common.h>
 
 namespace bcos {
 namespace gateway {

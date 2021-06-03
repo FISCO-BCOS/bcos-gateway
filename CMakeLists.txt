@@ -67,7 +67,7 @@ find_package(OpenSSL REQUIRED)
 hunter_add_package(jsoncpp)
 find_package(jsoncpp CONFIG REQUIRED)
 
-add_subdirectory(gateway)
+add_subdirectory(bcos-gateway)
 
 # ut
 if (TESTS)

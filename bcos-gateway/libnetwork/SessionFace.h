@@ -27,8 +27,8 @@
  */
 
 #pragma once
-#include "Common.h"
-#include "Message.h"
+#include <bcos-gateway/libnetwork/Common.h>
+#include <bcos-gateway/libnetwork/Message.h>
 #include <memory>
 
 #include <boost/asio.hpp>

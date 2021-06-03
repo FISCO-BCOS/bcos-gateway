@@ -22,7 +22,7 @@
 #include <iostream>
 #include <thread>
 
-#include <gateway/GatewayFactory.h>
+#include <bcos-gateway/GatewayFactory.h>
 
 using namespace std;
 using namespace bcos;

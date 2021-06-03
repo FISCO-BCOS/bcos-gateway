@@ -19,12 +19,12 @@
  *  @date 20181112
  */
 
-#include "P2PSession.h"
-#include "P2PMessage.h"
-#include "Service.h"
-#include "gateway/Gateway.h"
-#include <gateway/libnetwork/ASIOInterface.h>
-#include <gateway/libnetwork/Host.h>
+#include <bcos-gateway/Gateway.h>
+#include <bcos-gateway/libnetwork/ASIOInterface.h>
+#include <bcos-gateway/libnetwork/Host.h>
+#include <bcos-gateway/libp2p/P2PMessage.h>
+#include <bcos-gateway/libp2p/P2PSession.h>
+#include <bcos-gateway/libp2p/Service.h>
 
 #include <bcos-framework/libutilities/Common.h>
 #include <boost/algorithm/string.hpp>

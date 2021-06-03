@@ -20,8 +20,8 @@
  */
 
 #pragma once
-#include "Common.h"
-#include "libnetwork/Common.h"
+#include <bcos-gateway/Common.h>
+#include <bcos-gateway/libnetwork/Common.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>

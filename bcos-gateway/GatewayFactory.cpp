@@ -19,16 +19,16 @@
  *  @date 2021-05-17
  */
 
-#include "GatewayFactory.h"
-#include "gateway/GatewayNodeManager.h"
-#include "gateway/libnetwork/ASIOInterface.h"
-#include "gateway/libnetwork/Common.h"
-#include "gateway/libnetwork/Host.h"
-#include "gateway/libnetwork/Session.h"
-#include "gateway/libp2p/Service.h"
 #include <bcos-crypto/signature/key/KeyFactoryImpl.h>
 #include <bcos-framework/libutilities/DataConvertUtility.h>
 #include <bcos-framework/libutilities/FileUtility.h>
+#include <bcos-gateway/GatewayFactory.h>
+#include <bcos-gateway/GatewayNodeManager.h>
+#include <bcos-gateway/libnetwork/ASIOInterface.h>
+#include <bcos-gateway/libnetwork/Common.h>
+#include <bcos-gateway/libnetwork/Host.h>
+#include <bcos-gateway/libnetwork/Session.h>
+#include <bcos-gateway/libp2p/Service.h>
 
 using namespace bcos;
 using namespace gateway;

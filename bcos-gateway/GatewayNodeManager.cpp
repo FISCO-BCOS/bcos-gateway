@@ -18,7 +18,7 @@
  * @author: octopus
  * @date 2021-05-13
  */
-#include "GatewayNodeManager.h"
+#include <bcos-gateway/GatewayNodeManager.h>
 #include <json/json.h>
 
 using namespace std;

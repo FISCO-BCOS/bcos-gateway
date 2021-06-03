@@ -19,8 +19,8 @@
  *  @date 2021-05-19
  */
 
-#include "GatewayConfig.h"
 #include <bcos-framework/libutilities/FileUtility.h>
+#include <bcos-gateway/GatewayConfig.h>
 #include <boost/throw_exception.hpp>
 #include <json/json.h>
 

@@ -19,9 +19,9 @@
  * @date 2021-05-14
  */
 
-#include "gateway/GatewayNodeManager.h"
 #include <bcos-crypto/signature/key/KeyFactoryImpl.h>
 #include <bcos-framework/testutils/TestPromptFixture.h>
+#include <bcos-gateway/GatewayNodeManager.h>
 #include <boost/test/unit_test.hpp>
 
 using namespace bcos;
