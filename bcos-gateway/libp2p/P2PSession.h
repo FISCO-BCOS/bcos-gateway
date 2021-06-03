@@ -21,10 +21,10 @@
 
 #pragma once
 
-#include "Common.h"
-#include "P2PMessage.h"
-#include <gateway/libnetwork/Common.h>
-#include <gateway/libnetwork/SessionFace.h>
+#include <bcos-gateway/libnetwork/Common.h>
+#include <bcos-gateway/libnetwork/SessionFace.h>
+#include <bcos-gateway/libp2p/Common.h>
+#include <bcos-gateway/libp2p/P2PMessage.h>
 #include <memory>
 
 namespace bcos {

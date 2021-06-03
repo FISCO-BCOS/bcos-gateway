@@ -18,12 +18,11 @@
  * @date 2021-04-19
  */
 
-#include "Gateway.h"
-#include "Common.h"
-
 #include <bcos-framework/interfaces/protocol/CommonError.h>
 #include <bcos-framework/libutilities/Common.h>
 #include <bcos-framework/libutilities/Exceptions.h>
+#include <bcos-gateway/Common.h>
+#include <bcos-gateway/Gateway.h>
 
 using namespace bcos;
 using namespace bcos::protocol;

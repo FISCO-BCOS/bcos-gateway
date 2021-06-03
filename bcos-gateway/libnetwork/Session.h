@@ -30,8 +30,8 @@
 #include <set>
 #include <utility>
 
-#include "Common.h"
-#include "SessionFace.h"
+#include <bcos-gateway/libnetwork/Common.h>
+#include <bcos-gateway/libnetwork/SessionFace.h>
 
 namespace bcos {
 namespace gateway {

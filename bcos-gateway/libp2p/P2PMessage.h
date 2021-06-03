@@ -21,8 +21,8 @@
 #pragma once
 
 #include <bcos-framework/libutilities/Common.h>
-#include <gateway/libnetwork/Common.h>
-#include <gateway/libnetwork/Message.h>
+#include <bcos-gateway/libnetwork/Common.h>
+#include <bcos-gateway/libnetwork/Message.h>
 
 namespace bcos {
 namespace gateway {

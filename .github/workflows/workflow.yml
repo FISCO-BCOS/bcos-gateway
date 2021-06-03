@@ -131,7 +131,7 @@ jobs:
       - name: run test
         run: CTEST_OUTPUT_ON_FAILURE=TRUE make test
       - name: generate coverage
-        run: cd build && make gateway-coverage
+        run: mkdir build && cd build && cmake ../ -DTESTS=ON -DCOVERAGE=ON
       - name: upload code coverage to Codecov
         uses: codecov/codecov-action@v1
         with:

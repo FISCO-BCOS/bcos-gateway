@@ -19,8 +19,8 @@
  * @date 2021-05-21
  */
 
-#include "gateway/Gateway.h"
 #include <bcos-framework/testutils/TestPromptFixture.h>
+#include <bcos-gateway/Gateway.h>
 #include <boost/test/unit_test.hpp>
 
 using namespace bcos;

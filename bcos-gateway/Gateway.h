@@ -20,13 +20,12 @@
 
 #pragma once
 
-#include "Common.h"
-#include "GatewayNodeManager.h"
 #include <bcos-crypto/signature/key/KeyFactoryImpl.h>
 #include <bcos-framework/interfaces/front/FrontServiceInterface.h>
 #include <bcos-framework/interfaces/gateway/GatewayInterface.h>
-
-#include <gateway/libp2p/Service.h>
+#include <bcos-gateway/Common.h>
+#include <bcos-gateway/GatewayNodeManager.h>
+#include <bcos-gateway/libp2p/Service.h>
 
 namespace bcos {
 namespace gateway {

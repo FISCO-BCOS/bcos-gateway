@@ -21,7 +21,7 @@
  * @date 2018-09-13
  */
 #pragma once
-#include "Socket.h"
+#include <bcos-gateway/libnetwork/Socket.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>

@@ -19,10 +19,10 @@
  */
 
 #pragma once
-#include "Common.h"
-#include "libnetwork/Common.h"
 #include <bcos-framework/interfaces/front/FrontServiceInterface.h>
 #include <bcos-framework/interfaces/gateway/GatewayInterface.h>
+#include <bcos-gateway/Common.h>
+#include <bcos-gateway/libnetwork/Common.h>
 namespace bcos {
 namespace gateway {
 class GatewayNodeManager {

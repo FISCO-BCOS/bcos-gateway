@@ -22,7 +22,7 @@
  */
 
 #pragma once
-#include "Common.h"
+#include <bcos-gateway/libnetwork/Common.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast.hpp>
 

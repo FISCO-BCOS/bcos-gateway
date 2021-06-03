@@ -19,17 +19,16 @@
  *  @date 20180910
  */
 
-#include "Service.h"
-#include "Common.h"
-#include "P2PInterface.h" // for SessionCallbackFunc...
-#include "P2PMessage.h"
-#include "P2PSession.h" // for P2PSession
-#include "gateway/Gateway.h"
+#include <bcos-gateway/Gateway.h>
+#include <bcos-gateway/libnetwork/ASIOInterface.h> // for ASIOInterface
+#include <bcos-gateway/libnetwork/Common.h>        // for SocketFace
+#include <bcos-gateway/libnetwork/SocketFace.h>    // for SocketFace
+#include <bcos-gateway/libp2p/Common.h>
+#include <bcos-gateway/libp2p/P2PInterface.h> // for SessionCallbackFunc...
+#include <bcos-gateway/libp2p/P2PMessage.h>
+#include <bcos-gateway/libp2p/P2PSession.h> // for P2PSession
+#include <bcos-gateway/libp2p/Service.h>
 #include <boost/random.hpp>
-#include <gateway/libnetwork/ASIOInterface.h> // for ASIOInterface
-#include <gateway/libnetwork/Common.h>        // for SocketFace
-#include <gateway/libnetwork/SocketFace.h>    // for SocketFace
-#include <unordered_map>
 
 using namespace bcos;
 using namespace bcos::gateway;
