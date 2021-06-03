@@ -15,12 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ------------------------------------------------------------------------------
-file(GLOB_RECURSE SOURCES "*.cpp" "*.h" "*.sol")
+file(GLOB_RECURSE SOURCES "unittests/*.cpp" "unittests/*.h" "unittests/*.sol")
 
 # cmake settings
 include(SearchTestCases)
 set(TEST_BINARY_NAME test-bcos-gateway)
 config_test_cases("" "${SOURCES}" bin/${TEST_BINARY_NAME} "")
+
+if (BUILD_TEST_EXEC)
+    add_subdirectory(main)
+endif()
 
 add_executable(${TEST_BINARY_NAME} ${SOURCES})
 target_include_directories(${TEST_BINARY_NAME} PRIVATE .)

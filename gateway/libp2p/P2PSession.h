@@ -36,9 +36,9 @@ class P2PSession : public std::enable_shared_from_this<P2PSession> {
 public:
   using Ptr = std::shared_ptr<P2PSession>;
 
-  P2PSession() {}
+  P2PSession();
 
-  virtual ~P2PSession(){};
+  virtual ~P2PSession();
 
   virtual void start();
   virtual void stop(DisconnectReason reason);

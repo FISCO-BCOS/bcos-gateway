@@ -13,9 +13,9 @@
 namespace bcos {
 namespace gateway {
 
-#define P2PMSG_LOG(LEVEL) LOG(LEVEL) << "[P2PService][P2PMessage] "
-#define P2PSESSION_LOG(LEVEL) LOG(LEVEL) << "[P2PService][P2PSession] "
-#define SERVICE_LOG(LEVEL) LOG(LEVEL) << "[P2PService][Service] "
+#define P2PMSG_LOG(LEVEL) LOG(LEVEL) << "[P2PService][P2PMessage]"
+#define P2PSESSION_LOG(LEVEL) LOG(LEVEL) << "[P2PService][P2PSession]"
+#define SERVICE_LOG(LEVEL) LOG(LEVEL) << "[P2PService][Service]"
 
 struct P2PSessionInfo {
   P2PInfo p2pInfo;

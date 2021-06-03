@@ -41,7 +41,7 @@ void GatewayFactory::initCert2PubHexHandler() {
     do {
       auto certContent = readContentsToString(boost::filesystem::path(_cert));
       if (!certContent || certContent->empty()) {
-        errorMessage = "nable to load cert content, cert: " + _cert;
+        errorMessage = "unable to load cert content, cert: " + _cert;
         break;
       }
 
@@ -125,14 +125,14 @@ std::shared_ptr<boost::asio::ssl::context>
 GatewayFactory::buildSSLContext(const GatewayConfig::CertConfig &_certConfig) {
   std::shared_ptr<boost::asio::ssl::context> sslContext =
       std::make_shared<boost::asio::ssl::context>(
-          boost::asio::ssl::context::tlsv13);
-
-  std::shared_ptr<EC_KEY> ecdh(EC_KEY_new_by_curve_name(NID_secp384r1),
-                               [](EC_KEY *p) { EC_KEY_free(p); });
-  SSL_CTX_set_tmp_ecdh(sslContext->native_handle(), ecdh.get());
+          boost::asio::ssl::context::tlsv12);
+  /*
+    std::shared_ptr<EC_KEY> ecdh(EC_KEY_new_by_curve_name(NID_secp384r1),
+                                 [](EC_KEY *p) { EC_KEY_free(p); });
+    SSL_CTX_set_tmp_ecdh(sslContext->native_handle(), ecdh.get());
 
   sslContext->set_verify_mode(boost::asio::ssl::context_base::verify_none);
-
+ */
   auto keyContent = readContentsToString(
       boost::filesystem::path(_certConfig.nodeKey)); // node.key content
   if (!keyContent || keyContent->empty()) {
@@ -149,14 +149,14 @@ GatewayFactory::buildSSLContext(const GatewayConfig::CertConfig &_certConfig) {
 
   // node.crt
   sslContext->use_certificate_chain_file(_certConfig.nodeCert);
-  if (!SSL_CTX_get0_certificate(sslContext->native_handle())) {
+  /*if (!SSL_CTX_get0_certificate(sslContext->native_handle())) {
     GATEWAY_FACTORY_LOG(ERROR)
         << LOG_DESC("buildSSLContext: SSL_CTX_get0_certificate failed");
     BOOST_THROW_EXCEPTION(
         InvalidParameter() << errinfo_comment(
             "buildSSLContext: SSL_CTX_get0_certificate failed, node_cert=" +
             _certConfig.nodeCert));
-  }
+  }*/
 
   auto caCertContent = readContentsToString(
       boost::filesystem::path(_certConfig.caCert)); // ca.crt
@@ -185,7 +185,7 @@ std::shared_ptr<boost::asio::ssl::context> GatewayFactory::buildSSLContext(
     const GatewayConfig::SMCertConfig &_smCertConfig) {
   std::shared_ptr<boost::asio::ssl::context> sslContext =
       std::make_shared<boost::asio::ssl::context>(
-          boost::asio::ssl::context::tlsv13);
+          boost::asio::ssl::context::tlsv12);
 
   sslContext->set_verify_mode(boost::asio::ssl::context_base::verify_none);
 
