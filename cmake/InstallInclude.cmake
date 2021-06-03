@@ -1,7 +1,7 @@
 set(DESTINATION_INCLUDE_DIR "${CMAKE_INSTALL_INCLUDEDIR}/bcos-gateway")
 
 install(
-        DIRECTORY "gatway"
+        DIRECTORY "gateway"
         DESTINATION "${DESTINATION_INCLUDE_DIR}"
         FILES_MATCHING PATTERN "*.h"
 )
