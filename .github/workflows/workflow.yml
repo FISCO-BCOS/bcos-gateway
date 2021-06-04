@@ -131,11 +131,11 @@ jobs:
       - name: run test
         run: CTEST_OUTPUT_ON_FAILURE=TRUE make test
       - name: generate coverage
-        run: mkdir build && cd build && cmake ../ -DTESTS=ON -DCOVERAGE=ON
+        run: cd build && make test && make gateway-coverage
       - name: upload code coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
-          file: ./coverage.info
+          file: ./build/coverage.info
           name: bcos-gateway coverage
           fail_ci_if_error: true
   build_with_centos:
