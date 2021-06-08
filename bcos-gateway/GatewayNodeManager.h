@@ -81,6 +81,14 @@ public:
   bool unregisterFrontService(const std::string &_groupID,
                               bcos::crypto::NodeIDPtr _nodeID);
 
+public:
+  const std::unordered_map<
+      std::string,
+      std::unordered_map<std::string, bcos::front::FrontServiceInterface::Ptr>>
+      &groupID2NodeID2FrontServiceInterface() const {
+    return m_groupID2NodeID2FrontServiceInterface;
+  }
+
 private:
   // statusSeq
   std::atomic<uint32_t> m_statusSeq{1};
