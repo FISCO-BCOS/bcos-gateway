@@ -129,6 +129,7 @@ EOF
 
 generate_node_scripts() {
     local output=${1}
+    local nodeID=${2}
 
     cat <<EOF >"${output}/start.sh"
 #!/bin/bash
@@ -142,7 +143,7 @@ if [ -n "\${pid}" ];then
         echo "\${node} is running, pid is \${pid}"
         exit 0
 fi
-nohup ../gateway-exec-mini \${dirpath}/config.ini &
+nohup ../gateway-exec-mini 1 ${nodeID} \${dirpath}/config.ini &
 EOF
 
     cat <<EOF >"${output}/stop.sh"
@@ -222,7 +223,7 @@ main() {
         # node config
         bash build_gateway_config.sh ${ssl_model} -l "${listen_ip}" -p "${port}" -H "${connected_nodes}" -d "${output_dir}/node${i}"
         # start.sh stop.sh
-        generate_node_scripts "${output_dir}/node${i}"
+        generate_node_scripts "${output_dir}/node${i}" "${i}"
     done
 
     print_result
