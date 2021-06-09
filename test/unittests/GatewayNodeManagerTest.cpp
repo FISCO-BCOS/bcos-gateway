@@ -21,6 +21,8 @@
 
 #include <bcos-crypto/signature/key/KeyFactoryImpl.h>
 #include <bcos-framework/testutils/TestPromptFixture.h>
+#include <bcos-front/FrontServiceFactory.h>
+#include <bcos-gateway/Gateway.h>
 #include <bcos-gateway/GatewayNodeManager.h>
 #include <boost/test/unit_test.hpp>
 
@@ -43,12 +45,24 @@ BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_registerFrontService) {
   std::string groupID = "group";
   std::string strNodeID = "nodeID";
   auto keyFactory = std::make_shared<bcos::crypto::KeyFactoryImpl>();
+
   auto nodeID = keyFactory->createKey(
       bytesConstRef((byte *)strNodeID.data(), strNodeID.size()));
 
+  auto frontServiceFactory =
+      std::make_shared<bcos::front::FrontServiceFactory>();
+  frontServiceFactory->setGroupID(groupID);
+  frontServiceFactory->setNodeID(nodeID);
+  frontServiceFactory->setGatewayInterface(
+      std::make_shared<bcos::gateway::Gateway>());
+  frontServiceFactory->setThreadPool(
+      std::make_shared<ThreadPool>("frontServiceTest", 16));
+
+  auto frontService = frontServiceFactory->buildFrontService();
+
   bool r = false;
   auto seq = gatewayNodeManager->statusSeq();
-  r = gatewayNodeManager->registerFrontService(groupID, nodeID, nullptr);
+  r = gatewayNodeManager->registerFrontService(groupID, nodeID, frontService);
   BOOST_CHECK_EQUAL(r, true);
   BOOST_CHECK_EQUAL(seq + 1, gatewayNodeManager->statusSeq());
 
