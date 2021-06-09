@@ -93,18 +93,41 @@ int main(int argc, const char **argv) {
     // start gateway
     gateway->start();
 
+    int i = 0;
     while (true) {
+      i += 1;
       std::this_thread::sleep_for(std::chrono::seconds(10));
+
       std::string randStr =
           boost::uuids::to_string(boost::uuids::random_generator()());
       auto payload =
           bytesConstRef((bcos::byte *)randStr.data(), randStr.size());
+
+      /*
+      void FrontService::asyncSendMessageByNodeID(int _moduleID,
+                                                  bcos::crypto::NodeIDPtr
+      _nodeID, bytesConstRef _data, uint32_t _timeout, CallbackFunc
+      _callbackFunc)*/
+
       frontService->asyncGetNodeIDs(
-          [](Error::Ptr _error,
-             std::shared_ptr<const crypto::NodeIDs> _nodeIDs) {
+          [frontService, i,
+           payload](Error::Ptr _error,
+                    std::shared_ptr<const crypto::NodeIDs> _nodeIDs) {
             (void)_error;
+            if (!_nodeIDs || _nodeIDs->empty()) {
+              return;
+            }
+
+            auto index = i % _nodeIDs->size();
+            auto nodeID = (*_nodeIDs)[index];
+
             GATEWAY_MAIN_LOG(INFO) << LOG_DESC(" ==> nodeids")
-                                   << LOG_KV("nodeID size", _nodeIDs->size());
+                                   << LOG_KV("nodeIDs size", _nodeIDs->size())
+                                   << LOG_KV("nodeID", nodeID->hex());
+
+            frontService->asyncSendMessageByNodeID(
+                bcos::protocol::ModuleID::AMOP, nodeID, payload, 0,
+                bcos::front::CallbackFunc());
           });
     }
 

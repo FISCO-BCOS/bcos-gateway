@@ -301,12 +301,13 @@ GatewayFactory::buildGateway(GatewayConfig::Ptr _config) {
 
     // init GatewayNodeManager
     auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
+    gatewayNodeManager->setKeyFactory(keyFactory);
+
     // init Gateway
     auto gateway = std::make_shared<Gateway>();
 
     gateway->setP2PInterface(service);
     gateway->setGatewayNodeManager(gatewayNodeManager);
-    gateway->setKeyFactory(keyFactory);
 
     auto weakptrGatewayNodeManager =
         std::weak_ptr<GatewayNodeManager>(gatewayNodeManager);

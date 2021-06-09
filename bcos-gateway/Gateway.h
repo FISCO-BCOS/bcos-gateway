@@ -20,7 +20,6 @@
 
 #pragma once
 
-#include <bcos-crypto/signature/key/KeyFactoryImpl.h>
 #include <bcos-framework/interfaces/front/FrontServiceInterface.h>
 #include <bcos-framework/interfaces/gateway/GatewayInterface.h>
 #include <bcos-gateway/Common.h>
@@ -158,16 +157,7 @@ public:
     m_gatewayNodeManager = _gatewayNodeManager;
   }
 
-  std::shared_ptr<bcos::crypto::KeyFactory> keyFactory() {
-    return m_keyFactory;
-  }
-
-  void setKeyFactory(std::shared_ptr<bcos::crypto::KeyFactory> _keyFactory) {
-    m_keyFactory = _keyFactory;
-  }
-
 private:
-  std::shared_ptr<bcos::crypto::KeyFactory> m_keyFactory;
   // p2p service interface
   P2PInterface::Ptr m_p2pInterface;
   // GatewayNodeManager

@@ -19,6 +19,7 @@
  */
 
 #pragma once
+#include <bcos-framework/interfaces/crypto/KeyFactory.h>
 #include <bcos-framework/interfaces/front/FrontServiceInterface.h>
 #include <bcos-framework/interfaces/gateway/GatewayInterface.h>
 #include <bcos-gateway/Common.h>
@@ -55,6 +56,11 @@ public:
                    std::set<P2pID> &_p2pIDs);
   bool queryP2pIDsByGroupID(const std::string &_groupID,
                             std::set<P2pID> &_p2pIDs);
+  bool queryNodeIDsByGroupID(const std::string &_groupID,
+                             std::set<std::string> &_nodeIDs);
+
+  void showAllPeerGatewayNodeIDs();
+  void notifyNodeIDs2FrontService();
 
   bcos::front::FrontServiceInterface::Ptr
   queryFrontServiceInterfaceByGroupIDAndNodeID(const std::string &_groupID,
@@ -89,7 +95,16 @@ public:
     return m_groupID2NodeID2FrontServiceInterface;
   }
 
+  std::shared_ptr<bcos::crypto::KeyFactory> keyFactory() {
+    return m_keyFactory;
+  }
+
+  void setKeyFactory(std::shared_ptr<bcos::crypto::KeyFactory> _keyFactory) {
+    m_keyFactory = _keyFactory;
+  }
+
 private:
+  std::shared_ptr<bcos::crypto::KeyFactory> m_keyFactory;
   // statusSeq
   std::atomic<uint32_t> m_statusSeq{1};
   // lock m_peerGatewayNodes
