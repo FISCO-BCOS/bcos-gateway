@@ -18,6 +18,8 @@
  * @author: octopus
  * @date 2021-05-13
  */
+#include <bcos-framework/interfaces/protocol/CommonError.h>
+#include <bcos-framework/libutilities/DataConvertUtility.h>
 #include <bcos-gateway/GatewayNodeManager.h>
 #include <json/json.h>
 
@@ -183,23 +185,101 @@ void GatewayNodeManager::onReceiveStatusSeq(const P2pID &_p2pID,
   }
 }
 
+void GatewayNodeManager::notifyNodeIDs2FrontService() {
+  std::unordered_map<
+      std::string,
+      std::unordered_map<std::string, bcos::front::FrontServiceInterface::Ptr>>
+      groupID2NodeID2FrontServiceInterface;
+  {
+    std::lock_guard<std::mutex> l(x_groupID2NodeID2FrontServiceInterface);
+    groupID2NodeID2FrontServiceInterface =
+        m_groupID2NodeID2FrontServiceInterface;
+  }
+
+  auto okPtr =
+      std::make_shared<bcos::Error>(protocol::CommonError::SUCCESS, "success");
+  for (auto const groupEntry : groupID2NodeID2FrontServiceInterface) {
+    const auto &groupID = groupEntry.first;
+
+    std::set<std::string> nodeIDsSet;
+    queryNodeIDsByGroupID(groupID, nodeIDsSet);
+
+    std::shared_ptr<crypto::NodeIDs> nodeIDs =
+        std::make_shared<crypto::NodeIDs>();
+
+    std::stringstream ss;
+    for (auto const &nodeIDStr : nodeIDsSet) {
+      ss << " " << nodeIDStr;
+      auto bytes = bcos::fromHexString(nodeIDStr);
+      if (bytes) {
+        auto nodeID = m_keyFactory->createKey(*bytes.get());
+        nodeIDs->push_back(nodeID);
+      }
+    }
+
+    NODE_MANAGER_LOG(INFO) << LOG_DESC("notifyNodeIDs2FrontService")
+                           << LOG_KV("groupID", groupID)
+                           << LOG_KV("nodeCount", nodeIDsSet.size())
+                           << LOG_KV("nodeIDs", "[" + ss.str() + " ]");
+
+    for (const auto &frontServiceEntry : groupEntry.second) {
+      frontServiceEntry.second->onReceiveNodeIDs(
+          groupID, nodeIDs, [](Error::Ptr _error) {
+            NODE_MANAGER_LOG(TRACE)
+                << LOG_DESC(
+                       "notifyNodeIDs2FrontService onReceiveNodeIDs callback")
+                << LOG_KV("error", (_error ? _error->errorCode() : -1));
+          });
+    }
+  }
+  return;
+}
+
+void GatewayNodeManager::showAllPeerGatewayNodeIDs() {
+  for (auto it = m_peerGatewayNodes.begin(); it != m_peerGatewayNodes.end();
+       ++it) {
+    NODE_MANAGER_LOG(INFO) << LOG_DESC("peerGatewayNodes")
+                           << LOG_KV("groupID", it->first)
+                           << LOG_KV("nodeCount", it->second.size());
+    for (auto innerIt = it->second.begin(); innerIt != it->second.end();
+         ++innerIt) {
+      NODE_MANAGER_LOG(INFO)
+          << LOG_DESC("peerGatewayNodes") << LOG_KV("groupID", it->first)
+          << LOG_KV("nodeID", innerIt->first)
+          << LOG_KV("gatewayCount", innerIt->second.size());
+      for (auto innerIt2 = innerIt->second.begin();
+           innerIt2 != innerIt->second.end(); ++innerIt2) {
+        NODE_MANAGER_LOG(INFO)
+            << LOG_DESC("peerGatewayNodes") << LOG_KV("groupID", it->first)
+            << LOG_KV("nodeID", innerIt->first) << LOG_KV("p2pID", *innerIt2);
+      }
+    }
+  }
+}
+
 void GatewayNodeManager::updateNodeIDs(
     const P2pID &_p2pID, uint32_t _seq,
     const std::unordered_map<std::string, std::set<std::string>> &_nodeIDsMap) {
   NODE_MANAGER_LOG(INFO) << LOG_DESC("updateNodeIDs") << LOG_KV("p2pid", _p2pID)
                          << LOG_KV("statusSeq", _seq);
 
-  std::lock_guard<std::mutex> l(x_peerGatewayNodes);
-  // remove peer nodeIDs info first
-  removeNodeIDsByP2PID(_p2pID);
-  // insert current nodeIDs info
-  for (const auto &nodeIDs : _nodeIDsMap) {
-    for (const auto &nodeID : nodeIDs.second) {
-      m_peerGatewayNodes[nodeIDs.first][nodeID].insert(_p2pID);
+  {
+    std::lock_guard<std::mutex> l(x_peerGatewayNodes);
+    // remove peer nodeIDs info first
+    removeNodeIDsByP2PID(_p2pID);
+    // insert current nodeIDs info
+    for (const auto &nodeIDs : _nodeIDsMap) {
+      for (const auto &nodeID : nodeIDs.second) {
+        m_peerGatewayNodes[nodeIDs.first][nodeID].insert(_p2pID);
+      }
     }
+    // update seq
+    m_p2pID2Seq[_p2pID] = _seq;
+    showAllPeerGatewayNodeIDs();
   }
-  // update seq
-  m_p2pID2Seq[_p2pID] = _seq;
+
+  // notify nodeIDs to front service
+  notifyNodeIDs2FrontService();
 }
 
 void GatewayNodeManager::removeNodeIDsByP2PID(const std::string &_p2pID) {
@@ -228,6 +308,7 @@ void GatewayNodeManager::removeNodeIDsByP2PID(const std::string &_p2pID) {
       ++it;
     }
   } // for (auto it
+  showAllPeerGatewayNodeIDs();
 }
 
 bool GatewayNodeManager::parseReceivedJson(
@@ -340,10 +421,16 @@ void GatewayNodeManager::onRemoveNodeIDs(const P2pID &_p2pID) {
   NODE_MANAGER_LOG(INFO) << LOG_DESC("onRemoveNodeIDs")
                          << LOG_KV("p2pid", _p2pID);
 
-  std::lock_guard<std::mutex> l(x_peerGatewayNodes);
-  // remove statusSeq info
-  removeNodeIDsByP2PID(_p2pID);
-  m_p2pID2Seq.erase(_p2pID);
+  {
+    std::lock_guard<std::mutex> l(x_peerGatewayNodes);
+    // remove statusSeq info
+    removeNodeIDsByP2PID(_p2pID);
+    m_p2pID2Seq.erase(_p2pID);
+    showAllPeerGatewayNodeIDs();
+  }
+
+  // notify nodeIDs to front service
+  notifyNodeIDs2FrontService();
 }
 
 bool GatewayNodeManager::queryP2pIDs(const std::string &_groupID,
@@ -378,6 +465,22 @@ bool GatewayNodeManager::queryP2pIDsByGroupID(const std::string &_groupID,
 
   for (const auto &nodeMap : it->second) {
     _p2pIDs.insert(nodeMap.second.begin(), nodeMap.second.end());
+  }
+
+  return true;
+}
+
+bool GatewayNodeManager::queryNodeIDsByGroupID(
+    const std::string &_groupID, std::set<std::string> &_nodeIDs) {
+  std::lock_guard<std::mutex> l(x_peerGatewayNodes);
+
+  auto it = m_peerGatewayNodes.find(_groupID);
+  if (it == m_peerGatewayNodes.end()) {
+    return false;
+  }
+
+  for (const auto &nodeEntry : it->second) {
+    _nodeIDs.insert(nodeEntry.first);
   }
 
   return true;

@@ -22,31 +22,105 @@
 #include <iostream>
 #include <thread>
 
+#include <bcos-crypto/signature/key/KeyFactoryImpl.h>
+#include <bcos-framework/interfaces/protocol/Protocol.h>
+#include <bcos-framework/libutilities/Common.h>
+#include <bcos-front/FrontServiceFactory.h>
 #include <bcos-gateway/GatewayFactory.h>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 using namespace std;
 using namespace bcos;
 using namespace gateway;
 
+#define GATEWAY_MAIN_LOG(LEVEL) LOG(LEVEL) << "[Gateway][MAIN]"
+
 int main(int argc, const char **argv) {
-  if (argc <= 1) {
-    std::cerr << "please input config path" << std::endl;
+  if ((argc == 2) &&
+      ((std::string(argv[1]) == "-h") || (std::string(argv[1]) == "--help"))) {
+    std::cerr << "./gateway-exec-mini groupID nodeID ./config.ini" << std::endl;
     return -1;
   }
 
-  std::string configPath = argv[1];
-  if ((configPath == "-h") || (configPath == "--help")) {
-    std::cerr << "./gateway-exec-mini ./config.ini" << std::endl;
+  if (argc <= 3) {
+    std::cerr << "please input groupID、nodeID、config path" << std::endl;
     return -1;
   }
+
+  std::string groupID = argv[1];
+  std::string nodeID = argv[2];
+  std::string configPath = argv[3];
 
   try {
-    auto factory = std::make_shared<bcos::gateway::GatewayFactory>();
-    auto gateway = factory->buildGateway(configPath);
+    auto keyFactory = std::make_shared<bcos::crypto::KeyFactoryImpl>();
+    auto gatewayFactory = std::make_shared<bcos::gateway::GatewayFactory>();
+    auto frontServiceFactory =
+        std::make_shared<bcos::front::FrontServiceFactory>();
+    auto threadPool = std::make_shared<ThreadPool>("frontServiceTest", 16);
+
+    // build gateway
+    auto gateway = gatewayFactory->buildGateway(configPath);
+
+    // create nodeID by nodeID str
+    auto nodeIDPtr = keyFactory->createKey(
+        bytesConstRef((bcos::byte *)nodeID.data(), nodeID.size()));
+
+    frontServiceFactory->setGatewayInterface(gateway);
+
+    // create frontService
+    auto frontService =
+        frontServiceFactory->buildFrontService(groupID, nodeIDPtr);
+
+    // register message dispather for front service
+    frontService->registerModuleMessageDispatcher(
+        bcos::protocol::ModuleID::AMOP,
+        [](bcos::crypto::NodeIDPtr _nodeID, bytesConstRef _data) {
+          // do nothing, print message
+          GATEWAY_MAIN_LOG(INFO)
+              << LOG_DESC(" ==> front service receive message")
+              << LOG_KV("from", _nodeID->hex())
+              << LOG_KV("data size()", _data.size());
+        });
+
+    frontService->start();
+    // register front service to gateway
+    gateway->registerFrontService(groupID, nodeIDPtr, frontService);
+
+    // start gateway
     gateway->start();
 
+    int i = 0;
     while (true) {
+      i += 1;
       std::this_thread::sleep_for(std::chrono::seconds(10));
+
+      std::string randStr =
+          boost::uuids::to_string(boost::uuids::random_generator()());
+      auto payload =
+          bytesConstRef((bcos::byte *)randStr.data(), randStr.size());
+
+      frontService->asyncGetNodeIDs(
+          [frontService, i,
+           payload](Error::Ptr _error,
+                    std::shared_ptr<const crypto::NodeIDs> _nodeIDs) {
+            (void)_error;
+            if (!_nodeIDs || _nodeIDs->empty()) {
+              return;
+            }
+
+            auto index = i % _nodeIDs->size();
+            auto nodeID = (*_nodeIDs)[index];
+
+            GATEWAY_MAIN_LOG(INFO) << LOG_DESC(" ==> nodeids")
+                                   << LOG_KV("nodeIDs size", _nodeIDs->size())
+                                   << LOG_KV("nodeID", nodeID->hex());
+
+            frontService->asyncSendMessageByNodeID(
+                bcos::protocol::ModuleID::AMOP, _nodeIDs, payload, 0,
+                bcos::front::CallbackFunc());
+          });
     }
 
     if (gateway) {

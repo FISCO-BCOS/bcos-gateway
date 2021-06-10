@@ -32,6 +32,23 @@ void Gateway::start() {
   if (m_p2pInterface) {
     m_p2pInterface->start();
   }
+
+  const auto &groupID2NodeID2FrontServiceInterface =
+      m_gatewayNodeManager->groupID2NodeID2FrontServiceInterface();
+  if (groupID2NodeID2FrontServiceInterface.empty()) {
+    GATEWAY_LOG(WARNING) << LOG_DESC(
+        "start, gateway has no registered front service");
+  } else {
+    for (const auto &group : groupID2NodeID2FrontServiceInterface) {
+      for (const auto &node : group.second) {
+        GATEWAY_LOG(INFO) << LOG_DESC("start") << LOG_KV("groupID", group.first)
+                          << LOG_KV("nodeID", node.first);
+      }
+    }
+  }
+
+  GATEWAY_LOG(INFO) << LOG_DESC("start end.");
+
   return;
 }
 
@@ -39,6 +56,8 @@ void Gateway::stop() {
   if (m_p2pInterface) {
     m_p2pInterface->stop();
   }
+
+  GATEWAY_LOG(INFO) << LOG_DESC("stop end.");
   return;
 }
 
@@ -155,13 +174,13 @@ void Gateway::asyncSendMessageByNodeIDWithRetry(
       _errorRespFunc(okPtr);
     };
 
+    // TODO: how to set timeout, set it to 10000ms default temporarily
     m_p2pInterface->asyncSendMessageByNodeID(p2pID, _p2pMessage, callback,
                                              Options(10000));
   } catch (const std::exception &e) {
-    GATEWAY_LOG(ERROR)
-        << LOG_DESC("asyncSendMessageByNodeIDWithRetry send message error")
-        << LOG_KV("seq", _p2pMessage->seq())
-        << LOG_KV("error", boost::diagnostic_information(e));
+    GATEWAY_LOG(ERROR) << LOG_DESC("asyncSendMessageByNodeIDWithRetry")
+                       << LOG_KV("seq", _p2pMessage->seq())
+                       << LOG_KV("error", boost::diagnostic_information(e));
 
     auto errorPtr = std::make_shared<Error>(
         CommonError::TIMEOUT,
