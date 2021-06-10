@@ -38,8 +38,8 @@ list(APPEND CMAKE_MODULE_PATH ${BCOS_GATEWAY_CMAKE_DIR})
 #init hunter
 include(HunterGate)
 HunterGate(
-    URL "https://${URL_BASE}/ywy2090/hunter/archive/eff2760a468cdb92c4fb133fcecf16d358820a5a.tar.gz"
-    SHA1 "277a9dd8af36a0bd1212d8b2f2964934c711e487"
+    URL "https://${URL_BASE}/ywy2090/hunter/archive/46ec127c418f8b264aca259b7b886fed01af48e6.tar.gz"
+    SHA1 "c630ee821f1b3abe740ce27acd861fe817388d39"
     FILEPATH "${CMAKE_SOURCE_DIR}/cmake/config.cmake"
 )
 project(bcos-gateway VERSION "3.0.0")

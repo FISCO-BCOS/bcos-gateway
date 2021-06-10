@@ -67,13 +67,11 @@ int main(int argc, const char **argv) {
     auto nodeIDPtr = keyFactory->createKey(
         bytesConstRef((bcos::byte *)nodeID.data(), nodeID.size()));
 
-    frontServiceFactory->setNodeID(nodeIDPtr);
-    frontServiceFactory->setGroupID(groupID);
     frontServiceFactory->setGatewayInterface(gateway);
-    frontServiceFactory->setThreadPool(threadPool);
 
     // create frontService
-    auto frontService = frontServiceFactory->buildFrontService();
+    auto frontService =
+        frontServiceFactory->buildFrontService(groupID, nodeIDPtr);
 
     // register message dispather for front service
     frontService->registerModuleMessageDispatcher(
@@ -103,12 +101,6 @@ int main(int argc, const char **argv) {
       auto payload =
           bytesConstRef((bcos::byte *)randStr.data(), randStr.size());
 
-      /*
-      void FrontService::asyncSendMessageByNodeID(int _moduleID,
-                                                  bcos::crypto::NodeIDPtr
-      _nodeID, bytesConstRef _data, uint32_t _timeout, CallbackFunc
-      _callbackFunc)*/
-
       frontService->asyncGetNodeIDs(
           [frontService, i,
            payload](Error::Ptr _error,
@@ -126,7 +118,7 @@ int main(int argc, const char **argv) {
                                    << LOG_KV("nodeID", nodeID->hex());
 
             frontService->asyncSendMessageByNodeID(
-                bcos::protocol::ModuleID::AMOP, nodeID, payload, 0,
+                bcos::protocol::ModuleID::AMOP, _nodeIDs, payload, 0,
                 bcos::front::CallbackFunc());
           });
     }

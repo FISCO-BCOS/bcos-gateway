@@ -51,14 +51,10 @@ BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_registerFrontService) {
 
   auto frontServiceFactory =
       std::make_shared<bcos::front::FrontServiceFactory>();
-  frontServiceFactory->setGroupID(groupID);
-  frontServiceFactory->setNodeID(nodeID);
   frontServiceFactory->setGatewayInterface(
       std::make_shared<bcos::gateway::Gateway>());
-  frontServiceFactory->setThreadPool(
-      std::make_shared<ThreadPool>("frontServiceTest", 16));
 
-  auto frontService = frontServiceFactory->buildFrontService();
+  auto frontService = frontServiceFactory->buildFrontService(groupID, nodeID);
 
   bool r = false;
   auto seq = gatewayNodeManager->statusSeq();
