@@ -19,6 +19,7 @@
  *  @date 20180910
  */
 
+#include <bcos-framework/interfaces/protocol/CommonError.h>
 #include <bcos-gateway/Gateway.h>
 #include <bcos-gateway/libnetwork/ASIOInterface.h> // for ASIOInterface
 #include <bcos-gateway/libnetwork/Common.h>        // for SocketFace
@@ -368,12 +369,14 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session,
           [message, p2pSession, p2pMessage, serviceWeakPtr](Error::Ptr _error) {
             auto servicePtr = serviceWeakPtr.lock();
             if (servicePtr) {
-              SERVICE_LOG(DEBUG)
-                  << "onReceiveP2PMessage callback:"
-                  << LOG_KV("errorCode", _error->errorCode())
-                  << LOG_KV("errorMessage", _error->errorMessage());
-
-              auto errorCode = std::to_string(_error->errorCode());
+              auto errorCode = std::to_string(protocol::CommonError::SUCCESS);
+              if (_error) {
+                SERVICE_LOG(DEBUG)
+                    << "onReceiveP2PMessage callback error:"
+                    << LOG_KV("errorCode", _error->errorCode())
+                    << LOG_KV("errorMessage", _error->errorMessage());
+                errorCode = std::to_string(_error->errorCode());
+              }
               servicePtr->sendRespMessageBySession(
                   bytesConstRef((byte *)errorCode.data(), errorCode.size()),
                   p2pMessage, p2pSession);

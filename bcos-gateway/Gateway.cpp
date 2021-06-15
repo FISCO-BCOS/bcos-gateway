@@ -170,8 +170,7 @@ void Gateway::asyncSendMessageByNodeIDWithRetry(
           << LOG_KV("seq", _p2pMessage->seq()) << LOG_KV("p2pid", p2pID);
 
       // send this message successfully
-      auto okPtr = std::make_shared<Error>(CommonError::SUCCESS, "success");
-      _errorRespFunc(okPtr);
+      _errorRespFunc(nullptr);
     };
 
     // TODO: how to set timeout, set it to 10000ms default temporarily
@@ -268,6 +267,9 @@ void Gateway::asyncSendMessageByNodeIDs(
     asyncSendMessageByNodeID(
         _groupID, _srcNodeID, dstNodeID, _payload,
         [_groupID, _srcNodeID, dstNodeID](Error::Ptr _error) {
+          if (!_error) {
+            return;
+          }
           GATEWAY_LOG(TRACE) << LOG_DESC("asyncSendMessageByNodeIDs callback")
                              << LOG_KV("groupID", _groupID)
                              << LOG_KV("srcNodeID", _srcNodeID->hex())
@@ -344,15 +346,18 @@ void Gateway::onReceiveP2PMessage(const std::string &_groupID,
   frontServiceInterface->onReceiveMessage(
       _groupID, _srcNodeID, _payload,
       [_groupID, _srcNodeID, _dstNodeID, _errorRespFunc](Error::Ptr _error) {
+        if (_errorRespFunc) {
+          _errorRespFunc(_error);
+        }
+        if (!_error) {
+          return;
+        }
         GATEWAY_LOG(TRACE) << LOG_DESC("onReceiveP2PMessage callback")
                            << LOG_KV("groupID", _groupID)
                            << LOG_KV("srcNodeID", _srcNodeID->hex())
                            << LOG_KV("dstNodeID", _dstNodeID->hex())
                            << LOG_KV("errorCode", _error->errorCode())
                            << LOG_KV("errorMessage", _error->errorMessage());
-        if (_errorRespFunc) {
-          _errorRespFunc(_error);
-        }
       });
 }
 
@@ -373,6 +378,9 @@ void Gateway::onReceiveBroadcastMessage(const std::string &_groupID,
     frontServiceInterface->onReceiveMessage(
         _groupID, _srcNodeID, _payload,
         [_groupID, _srcNodeID](Error::Ptr _error) {
+          if (!_error) {
+            return;
+          }
           GATEWAY_LOG(TRACE) << LOG_DESC("onReceiveBroadcastMessage callback")
                              << LOG_KV("groupID", _groupID)
                              << LOG_KV("srcNodeID", _srcNodeID->hex())
