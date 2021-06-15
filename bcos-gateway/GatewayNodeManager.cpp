@@ -141,7 +141,7 @@ GatewayNodeManager::queryFrontServiceInterfaceByGroupID(
     std::lock_guard<std::mutex> l(x_groupID2NodeID2FrontServiceInterface);
     auto it = m_groupID2NodeID2FrontServiceInterface.find(_groupID);
     if (it != m_groupID2NodeID2FrontServiceInterface.end()) {
-      for (const auto innerIt : it->second) {
+      for (const auto &innerIt : it->second) {
         frontServiceInterfaces.insert(frontServiceInterfaces.begin(),
                                       innerIt.second);
       }
@@ -196,9 +196,7 @@ void GatewayNodeManager::notifyNodeIDs2FrontService() {
         m_groupID2NodeID2FrontServiceInterface;
   }
 
-  auto okPtr =
-      std::make_shared<bcos::Error>(protocol::CommonError::SUCCESS, "success");
-  for (auto const groupEntry : groupID2NodeID2FrontServiceInterface) {
+  for (auto const &groupEntry : groupID2NodeID2FrontServiceInterface) {
     const auto &groupID = groupEntry.first;
 
     std::set<std::string> nodeIDsSet;
@@ -225,6 +223,9 @@ void GatewayNodeManager::notifyNodeIDs2FrontService() {
     for (const auto &frontServiceEntry : groupEntry.second) {
       frontServiceEntry.second->onReceiveNodeIDs(
           groupID, nodeIDs, [](Error::Ptr _error) {
+            if (!_error) {
+              return;
+            }
             NODE_MANAGER_LOG(TRACE)
                 << LOG_DESC(
                        "notifyNodeIDs2FrontService onReceiveNodeIDs callback")
