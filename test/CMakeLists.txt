@@ -15,7 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ------------------------------------------------------------------------------
-file(GLOB_RECURSE SOURCES "unittests/*.cpp" "unittests/*.h" "unittests/*.sol")
+if(BUILD_INTEG_TESTS)
+    file(GLOB_RECURSE SOURCES "unittests/*.cpp" "unittests/*.h" "integtests/*.cpp" "integtests/*.h" "unittests/*.sol")
+else()
+    file(GLOB_RECURSE SOURCES "unittests/*.cpp" "unittests/*.h" "unittests/*.sol")
+endif()
 
 # cmake settings
 include(SearchTestCases)

@@ -204,12 +204,13 @@ main() {
     file_must_exists "build_gateway_cert.sh"
     file_must_exists "build_gateway_config.sh"
 
-    if [[ ! -f "$gateway_exec" ]]; then
-        LOG_FALT "gateway binary exec ${gateway_exec} not exist, please input the correct path."
+    if [[ -e "$gateway_exec" ]]; then
+        # LOG_FALT "gateway binary exec ${gateway_exec} not exist, please input the correct path."
+	cp "${gateway_exec}" "${output_dir}"
     fi
 
     mkdir -p "${output_dir}"
-    cp "${gateway_exec}" "${output_dir}"
+    # cp "${gateway_exec}" "${output_dir}"
     connected_nodes=$(generate_nodes_json 127.0.0.1 "${listen_port}" "${node_count}")
     # ca cert
     bash build_gateway_cert.sh ${ssl_model} -d "${output_dir}"/ca
