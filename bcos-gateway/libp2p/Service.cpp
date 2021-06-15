@@ -368,19 +368,21 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session,
           groupID, srcNodeIDPtr, dstNodeIDPtr, payload,
           [message, p2pSession, p2pMessage, serviceWeakPtr](Error::Ptr _error) {
             auto servicePtr = serviceWeakPtr.lock();
-            if (servicePtr) {
-              auto errorCode = std::to_string(protocol::CommonError::SUCCESS);
-              if (_error) {
-                SERVICE_LOG(DEBUG)
-                    << "onReceiveP2PMessage callback error:"
-                    << LOG_KV("errorCode", _error->errorCode())
-                    << LOG_KV("errorMessage", _error->errorMessage());
-                errorCode = std::to_string(_error->errorCode());
-              }
-              servicePtr->sendRespMessageBySession(
-                  bytesConstRef((byte *)errorCode.data(), errorCode.size()),
-                  p2pMessage, p2pSession);
+            if (!servicePtr) {
+              return;
             }
+
+            auto errorCode = std::to_string(protocol::CommonError::SUCCESS);
+            if (_error) {
+              SERVICE_LOG(DEBUG)
+                  << "onReceiveP2PMessage callback"
+                  << LOG_KV("errorCode", _error->errorCode())
+                  << LOG_KV("errorMessage", _error->errorMessage());
+              errorCode = std::to_string(_error->errorCode());
+            }
+            servicePtr->sendRespMessageBySession(
+                bytesConstRef((byte *)errorCode.data(), errorCode.size()),
+                p2pMessage, p2pSession);
           });
     } break;
     case MessageType::BroadcastMessage: {

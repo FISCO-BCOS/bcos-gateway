@@ -36,8 +36,7 @@ void Gateway::start() {
   const auto &groupID2NodeID2FrontServiceInterface =
       m_gatewayNodeManager->groupID2NodeID2FrontServiceInterface();
   if (groupID2NodeID2FrontServiceInterface.empty()) {
-    GATEWAY_LOG(WARNING) << LOG_DESC(
-        "start, gateway has no registered front service");
+    GATEWAY_LOG(WARNING) << LOG_DESC("gateway has no registered front service");
   } else {
     for (const auto &group : groupID2NodeID2FrontServiceInterface) {
       for (const auto &node : group.second) {
@@ -333,14 +332,14 @@ void Gateway::onReceiveP2PMessage(const std::string &_groupID,
                        << LOG_KV("dstNodeID", _dstNodeID->hex());
 
     auto errorPtr = std::make_shared<Error>(
-        CommonError::TIMEOUT,
-        "unable to find front service to dispath this message, "
-        "groupID:" +
-            _groupID + " ,dstNodeID:" + _dstNodeID->hex());
+        CommonError::TIMEOUT, "unable to find front service dispath message to "
+                              "groupID:" +
+                                  _groupID + " ,nodeID:" + _dstNodeID->hex());
 
     if (_errorRespFunc) {
       _errorRespFunc(errorPtr);
     }
+    return;
   }
 
   frontServiceInterface->onReceiveMessage(
@@ -349,15 +348,14 @@ void Gateway::onReceiveP2PMessage(const std::string &_groupID,
         if (_errorRespFunc) {
           _errorRespFunc(_error);
         }
-        if (!_error) {
-          return;
-        }
         GATEWAY_LOG(TRACE) << LOG_DESC("onReceiveP2PMessage callback")
                            << LOG_KV("groupID", _groupID)
                            << LOG_KV("srcNodeID", _srcNodeID->hex())
                            << LOG_KV("dstNodeID", _dstNodeID->hex())
-                           << LOG_KV("errorCode", _error->errorCode())
-                           << LOG_KV("errorMessage", _error->errorMessage());
+                           << LOG_KV("errorCode",
+                                     (_error ? _error->errorCode() : 0))
+                           << LOG_KV("errorMessage",
+                                     (_error ? _error->errorMessage() : ""));
       });
 }
 
@@ -378,14 +376,12 @@ void Gateway::onReceiveBroadcastMessage(const std::string &_groupID,
     frontServiceInterface->onReceiveMessage(
         _groupID, _srcNodeID, _payload,
         [_groupID, _srcNodeID](Error::Ptr _error) {
-          if (!_error) {
-            return;
-          }
-          GATEWAY_LOG(TRACE) << LOG_DESC("onReceiveBroadcastMessage callback")
-                             << LOG_KV("groupID", _groupID)
-                             << LOG_KV("srcNodeID", _srcNodeID->hex())
-                             << LOG_KV("errorCode", _error->errorCode())
-                             << LOG_KV("errorMessage", _error->errorMessage());
+          GATEWAY_LOG(TRACE)
+              << LOG_DESC("onReceiveBroadcastMessage callback")
+              << LOG_KV("groupID", _groupID)
+              << LOG_KV("srcNodeID", _srcNodeID->hex())
+              << LOG_KV("errorCode", (_error ? _error->errorCode() : 0))
+              << LOG_KV("errorMessage", (_error ? _error->errorMessage() : ""));
         });
   }
 }
