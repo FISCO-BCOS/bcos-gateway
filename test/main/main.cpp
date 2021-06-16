@@ -22,14 +22,7 @@
 #include <iostream>
 #include <thread>
 
-#include <bcos-crypto/signature/key/KeyFactoryImpl.h>
-#include <bcos-framework/interfaces/protocol/Protocol.h>
-#include <bcos-framework/libutilities/Common.h>
-#include <bcos-front/FrontServiceFactory.h>
-#include <bcos-gateway/GatewayFactory.h>
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
+#include "../common/FrontServiceBuilder.h"
 
 using namespace std;
 using namespace bcos;
@@ -76,12 +69,13 @@ int main(int argc, const char **argv) {
     // register message dispather for front service
     frontService->registerModuleMessageDispatcher(
         bcos::protocol::ModuleID::AMOP,
-        [](bcos::crypto::NodeIDPtr _nodeID, bytesConstRef _data) {
+        [](bcos::crypto::NodeIDPtr _nodeID, const std::string &_id,
+           bytesConstRef _data) {
           // do nothing, print message
           GATEWAY_MAIN_LOG(INFO)
-              << LOG_DESC(" ==> front service receive message")
-              << LOG_KV("from", _nodeID->hex())
-              << LOG_KV("data size()", _data.size());
+              << LOG_DESC(" ==> echo") << LOG_KV("from", _nodeID->hex())
+              << LOG_KV("id", _id)
+              << LOG_KV("msg", std::string(_data.begin(), _data.end()));
         });
 
     frontService->start();
@@ -91,35 +85,55 @@ int main(int argc, const char **argv) {
     // start gateway
     gateway->start();
 
-    int i = 0;
     while (true) {
-      i += 1;
-      std::this_thread::sleep_for(std::chrono::seconds(10));
-
-      std::string randStr =
-          boost::uuids::to_string(boost::uuids::random_generator()());
-      auto payload =
-          bytesConstRef((bcos::byte *)randStr.data(), randStr.size());
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
       frontService->asyncGetNodeIDs(
-          [frontService, i,
-           payload](Error::Ptr _error,
-                    std::shared_ptr<const crypto::NodeIDs> _nodeIDs) {
+          [frontService](Error::Ptr _error,
+                         std::shared_ptr<const crypto::NodeIDs> _nodeIDs) {
             (void)_error;
             if (!_nodeIDs || _nodeIDs->empty()) {
               return;
             }
 
-            auto index = i % _nodeIDs->size();
-            auto nodeID = (*_nodeIDs)[index];
+            for (const auto &nodeID : *_nodeIDs) {
+              std::string randStr =
+                  boost::uuids::to_string(boost::uuids::random_generator()());
+              auto payload =
+                  bytesConstRef((bcos::byte *)randStr.data(), randStr.size());
 
-            GATEWAY_MAIN_LOG(INFO) << LOG_DESC(" ==> nodeids")
-                                   << LOG_KV("nodeIDs size", _nodeIDs->size())
-                                   << LOG_KV("nodeID", nodeID->hex());
+              GATEWAY_MAIN_LOG(INFO)
+                  << LOG_DESC("request") << LOG_KV("to", nodeID->hex())
+                  << LOG_KV("msg", randStr);
 
-            frontService->asyncSendMessageByNodeID(
-                bcos::protocol::ModuleID::AMOP, _nodeIDs, payload, 0,
-                bcos::front::CallbackFunc());
+              frontService->asyncSendMessageByNodeID(
+                  bcos::protocol::ModuleID::AMOP, nodeID, payload, 0,
+                  [randStr](Error::Ptr _error, bcos::crypto::NodeIDPtr _nodeID,
+                            bytesConstRef _data, const std::string &_id,
+                            bcos::front::ResponseFunc _respFunc) {
+                    if (_error) {
+                      GATEWAY_MAIN_LOG(ERROR)
+                          << LOG_DESC("response")
+                          << LOG_KV("from", _nodeID->hex()) << LOG_KV("id", _id)
+                          << LOG_KV("error", _error->errorCode())
+                          << LOG_KV("msg", _error->errorMessage());
+                      return;
+                    }
+
+                    auto retMsg = std::string(_data.begin(), _data.end());
+                    if (retMsg == randStr) {
+                      GATEWAY_MAIN_LOG(INFO)
+                          << LOG_DESC("response ok") << LOG_KV("id", _id)
+                          << LOG_KV("from", _nodeID->hex());
+                    } else {
+                      GATEWAY_MAIN_LOG(INFO)
+                          << LOG_DESC("response error") << LOG_KV("id", _id)
+                          << LOG_KV("from", _nodeID->hex())
+                          << LOG_KV("sendMsg", randStr)
+                          << LOG_KV("retMsg", retMsg);
+                    }
+                  });
+            }
           });
     }
 

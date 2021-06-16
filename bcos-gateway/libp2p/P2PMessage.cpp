@@ -185,7 +185,7 @@ bool P2PMessage::encode(bytes &_buffer) {
     return false;
   }
 
-  _buffer.insert(_buffer.end(), m_payload.begin(), m_payload.end());
+  _buffer.insert(_buffer.end(), m_payload->begin(), m_payload->end());
 
   // calc total length and modify the length value in the buffer
   length = boost::asio::detail::socket_ops::host_to_network_long(
@@ -250,8 +250,9 @@ ssize_t P2PMessage::decode(bytesConstRef _buffer) {
     offset += optionsOffset;
   }
 
+  auto data = _buffer.getCroppedData(offset, m_length - offset);
   // payload
-  m_payload = _buffer.getCroppedData(offset, m_length - offset);
+  m_payload = std::make_shared<bytes>(data.begin(), data.end());
 
   return m_length;
 }

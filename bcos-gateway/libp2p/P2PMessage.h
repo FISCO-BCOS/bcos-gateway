@@ -120,7 +120,7 @@ public:
 
 public:
   P2PMessage() {
-    m_payload = bytesConstRef();
+    m_payload = std::make_shared<bytes>();
     m_options = std::make_shared<P2PMessageOptions>();
   }
 
@@ -145,8 +145,8 @@ public:
   P2PMessageOptions::Ptr options() const { return m_options; }
   void setOptions(P2PMessageOptions::Ptr _options) { m_options = _options; }
 
-  bytesConstRef payload() const { return m_payload; }
-  void setPayload(bytesConstRef _payload) { m_payload = _payload; }
+  std::shared_ptr<bytes> payload() const { return m_payload; }
+  void setPayload(std::shared_ptr<bytes> _payload) { m_payload = _payload; }
 
 public:
   ssize_t decodeHeader(bytesConstRef _buffer);
@@ -171,7 +171,7 @@ protected:
 
   P2PMessageOptions::Ptr m_options; ///< options fields
 
-  bytesConstRef m_payload; ///< payload data
+  std::shared_ptr<bytes> m_payload; ///< payload data
 };
 
 class P2PMessageFactory : public MessageFactory {
