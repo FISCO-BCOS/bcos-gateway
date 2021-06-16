@@ -244,7 +244,8 @@ void Service::sendMessageBySession(int _packetType, bytesConstRef _payload,
   auto seq = messageFactory()->newSeq();
   p2pMessage->setSeq(seq);
   p2pMessage->setPacketType(_packetType);
-  p2pMessage->setPayload(_payload);
+  p2pMessage->setPayload(
+      std::make_shared<bytes>(_payload.begin(), _payload.end()));
 
   _p2pSession->session()->asyncSendMessage(p2pMessage);
 
@@ -263,7 +264,8 @@ void Service::sendRespMessageBySession(bytesConstRef _payload,
 
   respMessage->setSeq(_p2pMessage->seq());
   respMessage->setRespPacket();
-  respMessage->setPayload(_payload);
+  respMessage->setPayload(
+      std::make_shared<bytes>(_payload.begin(), _payload.end()));
 
   _p2pSession->session()->asyncSendMessage(respMessage);
 
@@ -318,6 +320,7 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session,
     auto groupID = options->groupID();
     auto srcNodeID = options->srcNodeID();
     auto payload = p2pMessage->payload();
+    auto bytesConstRefPayload = bytesConstRef(payload->data(), payload->size());
     const auto &dstNodeIDs = options->dstNodeIDs();
 
     SERVICE_LOG(DEBUG) << LOG_DESC("onMessage receive message")
@@ -337,7 +340,7 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session,
     case MessageType::Heartbeat: {
       uint32_t statusSeq =
           boost::asio::detail::socket_ops::network_to_host_long(
-              *((uint32_t *)payload.data()));
+              *((uint32_t *)bytesConstRefPayload.data()));
       bool statusSeqChanged = false;
       gateway->gatewayNodeManager()->onReceiveStatusSeq(p2pID, statusSeq,
                                                         statusSeqChanged);
@@ -357,7 +360,8 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session,
     } break;
     case MessageType::ResponseNodeIDs: {
       gateway->gatewayNodeManager()->onReceiveNodeIDs(
-          p2pID, std::string(payload.begin(), payload.end()));
+          p2pID, std::string(bytesConstRefPayload.begin(),
+                             bytesConstRefPayload.end()));
     } break;
     case MessageType::PeerToPeerMessage: {
       bcos::crypto::NodeIDPtr srcNodeIDPtr =
@@ -365,20 +369,21 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session,
       bcos::crypto::NodeIDPtr dstNodeIDPtr =
           m_keyFactory->createKey(*dstNodeIDs[0].get());
       gateway->onReceiveP2PMessage(
-          groupID, srcNodeIDPtr, dstNodeIDPtr, payload,
+          groupID, srcNodeIDPtr, dstNodeIDPtr, bytesConstRefPayload,
           [message, p2pSession, p2pMessage, serviceWeakPtr](Error::Ptr _error) {
             auto servicePtr = serviceWeakPtr.lock();
             if (!servicePtr) {
               return;
             }
 
-            auto errorCode = std::to_string(protocol::CommonError::SUCCESS);
+            auto errorCode =
+                std::to_string(_error ? _error->errorCode()
+                                      : (int)protocol::CommonError::SUCCESS);
             if (_error) {
               SERVICE_LOG(DEBUG)
                   << "onReceiveP2PMessage callback"
                   << LOG_KV("errorCode", _error->errorCode())
                   << LOG_KV("errorMessage", _error->errorMessage());
-              errorCode = std::to_string(_error->errorCode());
             }
             servicePtr->sendRespMessageBySession(
                 bytesConstRef((byte *)errorCode.data(), errorCode.size()),
@@ -388,7 +393,8 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session,
     case MessageType::BroadcastMessage: {
       bcos::crypto::NodeIDPtr srcNodeIDPtr =
           m_keyFactory->createKey(*srcNodeID.get());
-      gateway->onReceiveBroadcastMessage(groupID, srcNodeIDPtr, payload);
+      gateway->onReceiveBroadcastMessage(groupID, srcNodeIDPtr,
+                                         bytesConstRefPayload);
     } break;
     default: {
       SERVICE_LOG(ERROR) << LOG_DESC("Unrecognized message type")

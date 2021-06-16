@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(test_P2PMessage) {
   BOOST_CHECK_EQUAL(decodeMsg->packetType(), 0);
   BOOST_CHECK_EQUAL(decodeMsg->seq(), 0);
   BOOST_CHECK_EQUAL(decodeMsg->ext(), 0);
-  BOOST_CHECK_EQUAL(decodeMsg->payload().size(), 0);
+  BOOST_CHECK_EQUAL(decodeMsg->payload()->size(), 0);
 
   auto decodeMsg1 =
       std::static_pointer_cast<P2PMessage>(factory->buildMessage());
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(test_P2PMessage_withoutOptions) {
   encodeMsg->setSeq(seq);
   encodeMsg->setPacketType(packetType);
   encodeMsg->setExt(ext);
-  encodeMsg->setPayload(bytesConstRef(payload->data(), payload->size()));
+  encodeMsg->setPayload(payload);
 
   auto buffer = std::make_shared<bytes>();
   auto r = encodeMsg->encode(*buffer.get());
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(test_P2PMessage_withoutOptions) {
   BOOST_CHECK_EQUAL(decodeMsg->packetType(), packetType);
   BOOST_CHECK_EQUAL(decodeMsg->seq(), seq);
   BOOST_CHECK_EQUAL(decodeMsg->ext(), ext);
-  BOOST_CHECK_EQUAL(decodeMsg->payload().size(), payload->size());
+  BOOST_CHECK_EQUAL(decodeMsg->payload()->size(), payload->size());
 }
 
 BOOST_AUTO_TEST_CASE(test_P2PMessage_optionsCodec) {
@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE(test_P2PMessage_codec) {
   encodeMsg->setSeq(seq);
   encodeMsg->setPacketType(packetType);
   encodeMsg->setExt(ext);
-  encodeMsg->setPayload(bytesConstRef(payload->data(), payload->size()));
+  encodeMsg->setPayload(payload);
 
   auto options = std::make_shared<P2PMessageOptions>();
   std::string groupID = "group";
@@ -308,7 +308,7 @@ BOOST_AUTO_TEST_CASE(test_P2PMessage_codec) {
   BOOST_CHECK_EQUAL(decodeMsg->packetType(), packetType);
   BOOST_CHECK_EQUAL(decodeMsg->seq(), seq);
   BOOST_CHECK_EQUAL(decodeMsg->ext(), ext);
-  BOOST_CHECK_EQUAL(decodeMsg->payload().size(), payload->size());
+  BOOST_CHECK_EQUAL(decodeMsg->payload()->size(), payload->size());
 
   auto decodeOptions = decodeMsg->options();
   BOOST_CHECK_EQUAL(groupID, decodeOptions->groupID());
