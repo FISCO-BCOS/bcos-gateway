@@ -26,84 +26,84 @@
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
-namespace bcos {
-namespace gateway {
-
-class GatewayConfig {
+namespace bcos
+{
+namespace gateway
+{
+class GatewayConfig
+{
 public:
-  using Ptr = std::shared_ptr<GatewayConfig>;
+    using Ptr = std::shared_ptr<GatewayConfig>;
 
-  GatewayConfig() = default;
-  ~GatewayConfig() = default;
-
-public:
-  // cert for ssl connection
-  struct CertConfig {
-    std::string caCert;
-    std::string nodeKey;
-    std::string nodeCert;
-  };
-
-  // cert for sm ssl connection
-  struct SMCertConfig {
-    std::string caCert;
-    std::string nodeCert;
-    std::string nodeKey;
-    std::string enNodeCert;
-    std::string enNodeKey;
-  };
+    GatewayConfig() = default;
+    ~GatewayConfig() = default;
 
 public:
-  /**
-   * @brief: loads configuration items from the config.ini
-   * @param _configPath: config.ini path
-   * @return void
-   */
-  void initConfig(std::string const &_configPath);
+    // cert for ssl connection
+    struct CertConfig
+    {
+        std::string caCert;
+        std::string nodeKey;
+        std::string nodeCert;
+    };
+
+    // cert for sm ssl connection
+    struct SMCertConfig
+    {
+        std::string caCert;
+        std::string nodeCert;
+        std::string nodeKey;
+        std::string enNodeCert;
+        std::string enNodeKey;
+    };
 
 public:
-  // check if the port valid
-  bool isValidPort(int port);
-  void hostAndPort2Endpoint(const std::string &_host,
-                            NodeIPEndpoint &_endpoint);
-  void parseConnectedJson(const std::string &_json,
-                          std::set<NodeIPEndpoint> &_nodeIPEndpointSet);
-  // loads p2p configuration items from the configuration file
-  void initP2PConfig(const boost::property_tree::ptree &_pt);
-  // loads ca configuration items from the configuration file
-  void initCertConfig(const boost::property_tree::ptree &_pt);
-  // loads sm ca configuration items from the configuration file
-  void initSMCertConfig(const boost::property_tree::ptree &_pt);
-  // check if file exist, exception will be throw if the file not exist
-  void checkFileExist(const std::string &_path);
+    /**
+     * @brief: loads configuration items from the config.ini
+     * @param _configPath: config.ini path
+     * @return void
+     */
+    void initConfig(std::string const& _configPath);
 
 public:
-  std::string listenIP() const { return m_listenIP; }
-  uint16_t listenPort() const { return m_listenPort; }
-  uint32_t threadPoolSize() { return m_threadPoolSize; }
-  bool smSSL() const { return m_smSSL; }
+    // check if the port valid
+    bool isValidPort(int port);
+    void hostAndPort2Endpoint(const std::string& _host, NodeIPEndpoint& _endpoint);
+    void parseConnectedJson(const std::string& _json, std::set<NodeIPEndpoint>& _nodeIPEndpointSet);
+    // loads p2p configuration items from the configuration file
+    void initP2PConfig(const boost::property_tree::ptree& _pt);
+    // loads ca configuration items from the configuration file
+    void initCertConfig(const boost::property_tree::ptree& _pt);
+    // loads sm ca configuration items from the configuration file
+    void initSMCertConfig(const boost::property_tree::ptree& _pt);
+    // check if file exist, exception will be throw if the file not exist
+    void checkFileExist(const std::string& _path);
 
-  CertConfig certConfig() const { return m_certConfig; }
-  SMCertConfig smCertConfig() const { return m_smCertConfig; }
-  const std::set<NodeIPEndpoint> &connectedNodes() const {
-    return m_connectedNodes;
-  }
+public:
+    std::string listenIP() const { return m_listenIP; }
+    uint16_t listenPort() const { return m_listenPort; }
+    uint32_t threadPoolSize() { return m_threadPoolSize; }
+    bool smSSL() const { return m_smSSL; }
+
+    CertConfig certConfig() const { return m_certConfig; }
+    SMCertConfig smCertConfig() const { return m_smCertConfig; }
+    const std::set<NodeIPEndpoint>& connectedNodes() const { return m_connectedNodes; }
 
 private:
-  // if SM SSL connection or not
-  bool m_smSSL;
-  // p2p network listen IP
-  std::string m_listenIP;
-  // p2p network listen Port
-  uint16_t m_listenPort;
-  // threadPool size
-  uint32_t m_threadPoolSize{16};
-  // p2p connected nodes host list
-  std::set<NodeIPEndpoint> m_connectedNodes;
-  // cert config for ssl connection
-  CertConfig m_certConfig;
-  SMCertConfig m_smCertConfig;
+    // if SM SSL connection or not
+    bool m_smSSL;
+    // p2p network listen IP
+    std::string m_listenIP;
+    // p2p network listen Port
+    uint16_t m_listenPort;
+    // threadPool size
+    uint32_t m_threadPoolSize{16};
+    // p2p connected nodes host list
+    std::set<NodeIPEndpoint> m_connectedNodes;
+    // cert config for ssl connection
+    CertConfig m_certConfig;
+    SMCertConfig m_smCertConfig;
 };
 
-} // namespace gateway
-} // namespace bcos
+}  // namespace gateway
+}  // namespace bcos

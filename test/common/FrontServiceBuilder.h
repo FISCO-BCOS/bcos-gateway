@@ -30,33 +30,31 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
-inline std::shared_ptr<bcos::front::FrontService>
-buildFrontService(const std::string &_groupID, const std::string &_nodeID,
-                  const std::string &_configPath) {
-  auto keyFactory = std::make_shared<bcos::crypto::KeyFactoryImpl>();
-  auto gatewayFactory = std::make_shared<bcos::gateway::GatewayFactory>();
-  auto frontServiceFactory =
-      std::make_shared<bcos::front::FrontServiceFactory>();
-  auto threadPool = std::make_shared<bcos::ThreadPool>("frontServiceTest", 16);
+inline std::shared_ptr<bcos::front::FrontService> buildFrontService(
+    const std::string& _groupID, const std::string& _nodeID, const std::string& _configPath)
+{
+    auto keyFactory = std::make_shared<bcos::crypto::KeyFactoryImpl>();
+    auto gatewayFactory = std::make_shared<bcos::gateway::GatewayFactory>();
+    auto frontServiceFactory = std::make_shared<bcos::front::FrontServiceFactory>();
+    auto threadPool = std::make_shared<bcos::ThreadPool>("frontServiceTest", 16);
 
-  // build gateway
-  auto gateway = gatewayFactory->buildGateway(_configPath);
+    // build gateway
+    auto gateway = gatewayFactory->buildGateway(_configPath);
 
-  // create nodeID by nodeID str
-  auto nodeIDPtr = keyFactory->createKey(
-      bcos::bytesConstRef((bcos::byte *)_nodeID.data(), _nodeID.size()));
+    // create nodeID by nodeID str
+    auto nodeIDPtr =
+        keyFactory->createKey(bcos::bytesConstRef((bcos::byte*)_nodeID.data(), _nodeID.size()));
 
-  frontServiceFactory->setGatewayInterface(gateway);
+    frontServiceFactory->setGatewayInterface(gateway);
 
-  // create frontService
-  auto frontService =
-      frontServiceFactory->buildFrontService(_groupID, nodeIDPtr);
-  // register front service to gateway
-  gateway->registerFrontService(_groupID, nodeIDPtr, frontService);
-  // front service
-  frontService->start();
-  // start gateway
-  gateway->start();
+    // create frontService
+    auto frontService = frontServiceFactory->buildFrontService(_groupID, nodeIDPtr);
+    // register front service to gateway
+    gateway->registerFrontService(_groupID, nodeIDPtr, frontService);
+    // front service
+    frontService->start();
+    // start gateway
+    gateway->start();
 
-  return frontService;
+    return frontService;
 }

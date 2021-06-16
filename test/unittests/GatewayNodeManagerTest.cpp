@@ -32,363 +32,370 @@ using namespace bcos::test;
 
 BOOST_FIXTURE_TEST_SUITE(GatewayNodeManagerTest, TestPromptFixture)
 
-BOOST_AUTO_TEST_CASE(test_P2PMessage_statusSeqChanged) {
-  auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
-  std::string p2pID = "1";
-  bool statusSeqChanged = false;
-  gatewayNodeManager->onReceiveStatusSeq(p2pID, 1, statusSeqChanged);
-  BOOST_CHECK(statusSeqChanged);
+BOOST_AUTO_TEST_CASE(test_P2PMessage_statusSeqChanged)
+{
+    auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
+    std::string p2pID = "1";
+    bool statusSeqChanged = false;
+    gatewayNodeManager->onReceiveStatusSeq(p2pID, 1, statusSeqChanged);
+    BOOST_CHECK(statusSeqChanged);
 }
 
-BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_registerFrontService) {
-  auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
-  std::string groupID = "group";
-  std::string strNodeID = "nodeID";
-  auto keyFactory = std::make_shared<bcos::crypto::KeyFactoryImpl>();
+BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_registerFrontService)
+{
+    auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
+    std::string groupID = "group";
+    std::string strNodeID = "nodeID";
+    auto keyFactory = std::make_shared<bcos::crypto::KeyFactoryImpl>();
 
-  auto nodeID = keyFactory->createKey(
-      bytesConstRef((byte *)strNodeID.data(), strNodeID.size()));
+    auto nodeID = keyFactory->createKey(bytesConstRef((byte*)strNodeID.data(), strNodeID.size()));
 
-  auto frontServiceFactory =
-      std::make_shared<bcos::front::FrontServiceFactory>();
-  frontServiceFactory->setGatewayInterface(
-      std::make_shared<bcos::gateway::Gateway>());
+    auto frontServiceFactory = std::make_shared<bcos::front::FrontServiceFactory>();
+    frontServiceFactory->setGatewayInterface(std::make_shared<bcos::gateway::Gateway>());
 
-  auto frontService = frontServiceFactory->buildFrontService(groupID, nodeID);
-
-  bool r = false;
-  auto seq = gatewayNodeManager->statusSeq();
-  r = gatewayNodeManager->registerFrontService(groupID, nodeID, frontService);
-  BOOST_CHECK_EQUAL(r, true);
-  BOOST_CHECK_EQUAL(seq + 1, gatewayNodeManager->statusSeq());
-
-  auto s = gatewayNodeManager->queryFrontServiceInterfaceByGroupID(groupID);
-  BOOST_CHECK(!s.empty());
-
-  seq = gatewayNodeManager->statusSeq();
-  r = gatewayNodeManager->registerFrontService(groupID, nodeID, nullptr);
-  BOOST_CHECK_EQUAL(r, false);
-  BOOST_CHECK_EQUAL(seq, gatewayNodeManager->statusSeq());
-
-  seq = gatewayNodeManager->statusSeq();
-  r = gatewayNodeManager->unregisterFrontService(groupID, nodeID);
-  BOOST_CHECK_EQUAL(r, true);
-  BOOST_CHECK_EQUAL(seq + 1, gatewayNodeManager->statusSeq());
-
-  s = gatewayNodeManager->queryFrontServiceInterfaceByGroupID(groupID);
-  BOOST_CHECK(s.empty());
-
-  seq = gatewayNodeManager->statusSeq();
-  r = gatewayNodeManager->registerFrontService(groupID, nodeID, nullptr);
-  BOOST_CHECK_EQUAL(r, true);
-  BOOST_CHECK_EQUAL(seq + 1, gatewayNodeManager->statusSeq());
-
-  s = gatewayNodeManager->queryFrontServiceInterfaceByGroupID(groupID);
-  BOOST_CHECK(!s.empty());
-
-  seq = gatewayNodeManager->statusSeq();
-  r = gatewayNodeManager->registerFrontService(groupID, nodeID, nullptr);
-  BOOST_CHECK_EQUAL(r, false);
-  BOOST_CHECK_EQUAL(seq, gatewayNodeManager->statusSeq());
-  s = gatewayNodeManager->queryFrontServiceInterfaceByGroupID(groupID);
-  BOOST_CHECK(!s.empty());
-}
-
-BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_registerFrontService_loop) {
-  auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
-  size_t loopCount = 100;
-  auto keyFactory = std::make_shared<bcos::crypto::KeyFactoryImpl>();
-
-  for (size_t i = 0; i < loopCount; i++) {
-    std::string strNodeID = "nodeID" + std::to_string(i);
-    std::string groupID = "group" + std::to_string(i);
-
-    auto nodeID = keyFactory->createKey(
-        bytesConstRef((byte *)strNodeID.data(), strNodeID.size()));
-
-    auto seq = gatewayNodeManager->statusSeq();
-    bool r = gatewayNodeManager->registerFrontService(groupID, nodeID, nullptr);
-    BOOST_CHECK_EQUAL(r, true);
-    BOOST_CHECK_EQUAL(seq + 1, gatewayNodeManager->statusSeq());
-
-    seq = gatewayNodeManager->statusSeq();
-    r = gatewayNodeManager->registerFrontService(groupID, nodeID, nullptr);
-    BOOST_CHECK_EQUAL(r, false);
-    BOOST_CHECK_EQUAL(seq, gatewayNodeManager->statusSeq());
-
-    std::string jsonValue;
-    gatewayNodeManager->onRequestNodeIDs(jsonValue);
-    BOOST_CHECK(!jsonValue.empty());
-
-    seq = gatewayNodeManager->statusSeq();
-    r = gatewayNodeManager->unregisterFrontService(groupID, nodeID);
-    BOOST_CHECK_EQUAL(r, true);
-    BOOST_CHECK_EQUAL(seq + 1, gatewayNodeManager->statusSeq());
-
-    seq = gatewayNodeManager->statusSeq();
-    r = gatewayNodeManager->unregisterFrontService(groupID, nodeID);
-    BOOST_CHECK_EQUAL(r, false);
-    BOOST_CHECK_EQUAL(seq, gatewayNodeManager->statusSeq());
-  }
-}
-
-BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_onRequestNodeIDs) {
-  auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
-  auto keyFactory = std::make_shared<bcos::crypto::KeyFactoryImpl>();
-
-  for (size_t i = 0; i < 100; i++) {
-    std::string groupID = "group" + std::to_string(i);
-    std::string strNodeID = "nodeID" + std::to_string(i);
-
-    auto nodeID = keyFactory->createKey(
-        bytesConstRef((byte *)strNodeID.data(), strNodeID.size()));
+    auto frontService = frontServiceFactory->buildFrontService(groupID, nodeID);
 
     bool r = false;
     auto seq = gatewayNodeManager->statusSeq();
-    r = gatewayNodeManager->registerFrontService(groupID, nodeID, nullptr);
-    BOOST_CHECK(r);
+    r = gatewayNodeManager->registerFrontService(groupID, nodeID, frontService);
+    BOOST_CHECK_EQUAL(r, true);
     BOOST_CHECK_EQUAL(seq + 1, gatewayNodeManager->statusSeq());
 
-    std::string jsonValue;
-    gatewayNodeManager->onRequestNodeIDs(jsonValue);
-    BOOST_CHECK(!jsonValue.empty());
+    auto s = gatewayNodeManager->queryFrontServiceInterfaceByGroupID(groupID);
+    BOOST_CHECK(!s.empty());
+
+    seq = gatewayNodeManager->statusSeq();
+    r = gatewayNodeManager->registerFrontService(groupID, nodeID, nullptr);
+    BOOST_CHECK_EQUAL(r, false);
+    BOOST_CHECK_EQUAL(seq, gatewayNodeManager->statusSeq());
+
+    seq = gatewayNodeManager->statusSeq();
+    r = gatewayNodeManager->unregisterFrontService(groupID, nodeID);
+    BOOST_CHECK_EQUAL(r, true);
+    BOOST_CHECK_EQUAL(seq + 1, gatewayNodeManager->statusSeq());
+
+    s = gatewayNodeManager->queryFrontServiceInterfaceByGroupID(groupID);
+    BOOST_CHECK(s.empty());
+
+    seq = gatewayNodeManager->statusSeq();
+    r = gatewayNodeManager->registerFrontService(groupID, nodeID, nullptr);
+    BOOST_CHECK_EQUAL(r, true);
+    BOOST_CHECK_EQUAL(seq + 1, gatewayNodeManager->statusSeq());
+
+    s = gatewayNodeManager->queryFrontServiceInterfaceByGroupID(groupID);
+    BOOST_CHECK(!s.empty());
+
+    seq = gatewayNodeManager->statusSeq();
+    r = gatewayNodeManager->registerFrontService(groupID, nodeID, nullptr);
+    BOOST_CHECK_EQUAL(r, false);
+    BOOST_CHECK_EQUAL(seq, gatewayNodeManager->statusSeq());
+    s = gatewayNodeManager->queryFrontServiceInterfaceByGroupID(groupID);
+    BOOST_CHECK(!s.empty());
+}
+
+BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_registerFrontService_loop)
+{
+    auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
+    size_t loopCount = 100;
+    auto keyFactory = std::make_shared<bcos::crypto::KeyFactoryImpl>();
+
+    for (size_t i = 0; i < loopCount; i++)
+    {
+        std::string strNodeID = "nodeID" + std::to_string(i);
+        std::string groupID = "group" + std::to_string(i);
+
+        auto nodeID =
+            keyFactory->createKey(bytesConstRef((byte*)strNodeID.data(), strNodeID.size()));
+
+        auto seq = gatewayNodeManager->statusSeq();
+        bool r = gatewayNodeManager->registerFrontService(groupID, nodeID, nullptr);
+        BOOST_CHECK_EQUAL(r, true);
+        BOOST_CHECK_EQUAL(seq + 1, gatewayNodeManager->statusSeq());
+
+        seq = gatewayNodeManager->statusSeq();
+        r = gatewayNodeManager->registerFrontService(groupID, nodeID, nullptr);
+        BOOST_CHECK_EQUAL(r, false);
+        BOOST_CHECK_EQUAL(seq, gatewayNodeManager->statusSeq());
+
+        std::string jsonValue;
+        gatewayNodeManager->onRequestNodeIDs(jsonValue);
+        BOOST_CHECK(!jsonValue.empty());
+
+        seq = gatewayNodeManager->statusSeq();
+        r = gatewayNodeManager->unregisterFrontService(groupID, nodeID);
+        BOOST_CHECK_EQUAL(r, true);
+        BOOST_CHECK_EQUAL(seq + 1, gatewayNodeManager->statusSeq());
+
+        seq = gatewayNodeManager->statusSeq();
+        r = gatewayNodeManager->unregisterFrontService(groupID, nodeID);
+        BOOST_CHECK_EQUAL(r, false);
+        BOOST_CHECK_EQUAL(seq, gatewayNodeManager->statusSeq());
+    }
+}
+
+BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_onRequestNodeIDs)
+{
+    auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
+    auto keyFactory = std::make_shared<bcos::crypto::KeyFactoryImpl>();
+
+    for (size_t i = 0; i < 100; i++)
+    {
+        std::string groupID = "group" + std::to_string(i);
+        std::string strNodeID = "nodeID" + std::to_string(i);
+
+        auto nodeID =
+            keyFactory->createKey(bytesConstRef((byte*)strNodeID.data(), strNodeID.size()));
+
+        bool r = false;
+        auto seq = gatewayNodeManager->statusSeq();
+        r = gatewayNodeManager->registerFrontService(groupID, nodeID, nullptr);
+        BOOST_CHECK(r);
+        BOOST_CHECK_EQUAL(seq + 1, gatewayNodeManager->statusSeq());
+
+        std::string jsonValue;
+        gatewayNodeManager->onRequestNodeIDs(jsonValue);
+        BOOST_CHECK(!jsonValue.empty());
+
+        uint32_t statusSeq;
+        std::unordered_map<std::string, std::set<std::string>> nodeIDsMap;
+        r = gatewayNodeManager->parseReceivedJson(jsonValue, statusSeq, nodeIDsMap);
+        BOOST_CHECK(r);
+        BOOST_CHECK_EQUAL(seq + 1, statusSeq);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_jsonJarser)
+{
+    auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
 
     uint32_t statusSeq;
     std::unordered_map<std::string, std::set<std::string>> nodeIDsMap;
-    r = gatewayNodeManager->parseReceivedJson(jsonValue, statusSeq, nodeIDsMap);
-    BOOST_CHECK(r);
-    BOOST_CHECK_EQUAL(seq + 1, statusSeq);
-  }
+    const std::string json =
+        "{\"statusSeq\":110,\"nodeInfoList\":[{\"groupID\":\"group1\","
+        "\"nodeIDs\":["
+        "\"a0\",\"b0\",\"c0\"]},{\"groupID\":\"group2\",\"nodeIDs\":[\"a1\","
+        "\"b1\",\"c1\"]},{\"groupID\":\"group3\",\"nodeIDs\":[\"a2\",\"b2\","
+        "\"c2\"]}]}";
+
+    auto r = gatewayNodeManager->parseReceivedJson(json, statusSeq, nodeIDsMap);
+    BOOST_CHECK_EQUAL(r, true);
+    BOOST_CHECK_EQUAL(statusSeq, 110);
+    BOOST_CHECK_EQUAL(nodeIDsMap.size(), 3);
+
+    BOOST_CHECK(nodeIDsMap.find("group1") != nodeIDsMap.end());
+    BOOST_CHECK(nodeIDsMap.find("group2") != nodeIDsMap.end());
+    BOOST_CHECK(nodeIDsMap.find("group3") != nodeIDsMap.end());
+
+    const auto& group1 = nodeIDsMap["group1"];
+    BOOST_CHECK_EQUAL(group1.size(), 3);
+    BOOST_CHECK(group1.find("a0") != group1.end());
+    BOOST_CHECK(group1.find("b0") != group1.end());
+    BOOST_CHECK(group1.find("c0") != group1.end());
+
+    const auto& group2 = nodeIDsMap["group2"];
+    BOOST_CHECK_EQUAL(group2.size(), 3);
+    BOOST_CHECK(group2.find("a1") != group2.end());
+    BOOST_CHECK(group2.find("b1") != group2.end());
+    BOOST_CHECK(group2.find("c1") != group2.end());
+
+    const auto& group3 = nodeIDsMap["group3"];
+    BOOST_CHECK_EQUAL(group3.size(), 3);
+    BOOST_CHECK(group3.find("a2") != group3.end());
+    BOOST_CHECK(group3.find("b2") != group3.end());
+    BOOST_CHECK(group3.find("c2") != group3.end());
 }
 
-BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_jsonJarser) {
-  auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
+BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_onReceiveNodeIDs)
+{
+    auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
 
-  uint32_t statusSeq;
-  std::unordered_map<std::string, std::set<std::string>> nodeIDsMap;
-  const std::string json =
-      "{\"statusSeq\":110,\"nodeInfoList\":[{\"groupID\":\"group1\","
-      "\"nodeIDs\":["
-      "\"a0\",\"b0\",\"c0\"]},{\"groupID\":\"group2\",\"nodeIDs\":[\"a1\","
-      "\"b1\",\"c1\"]},{\"groupID\":\"group3\",\"nodeIDs\":[\"a2\",\"b2\","
-      "\"c2\"]}]}";
+    const std::string json =
+        "{\"statusSeq\":110,\"nodeInfoList\":[{\"groupID\":\"group1\","
+        "\"nodeIDs\":["
+        "\"a0\",\"b0\",\"c0\"]},{\"groupID\":\"group2\",\"nodeIDs\":[\"a1\","
+        "\"b1\",\"c1\"]},{\"groupID\":\"group3\",\"nodeIDs\":[\"a2\",\"b2\","
+        "\"c2\"]}]}";
+    std::string p2pID = "xxxxxxxxxxxxxxxxxxxxx";
+    gatewayNodeManager->onReceiveNodeIDs(p2pID, json);
+    bool statusChanged = false;
+    gatewayNodeManager->onReceiveStatusSeq(p2pID, 110, statusChanged);
+    BOOST_CHECK(!statusChanged);
 
-  auto r = gatewayNodeManager->parseReceivedJson(json, statusSeq, nodeIDsMap);
-  BOOST_CHECK_EQUAL(r, true);
-  BOOST_CHECK_EQUAL(statusSeq, 110);
-  BOOST_CHECK_EQUAL(nodeIDsMap.size(), 3);
-
-  BOOST_CHECK(nodeIDsMap.find("group1") != nodeIDsMap.end());
-  BOOST_CHECK(nodeIDsMap.find("group2") != nodeIDsMap.end());
-  BOOST_CHECK(nodeIDsMap.find("group3") != nodeIDsMap.end());
-
-  const auto &group1 = nodeIDsMap["group1"];
-  BOOST_CHECK_EQUAL(group1.size(), 3);
-  BOOST_CHECK(group1.find("a0") != group1.end());
-  BOOST_CHECK(group1.find("b0") != group1.end());
-  BOOST_CHECK(group1.find("c0") != group1.end());
-
-  const auto &group2 = nodeIDsMap["group2"];
-  BOOST_CHECK_EQUAL(group2.size(), 3);
-  BOOST_CHECK(group2.find("a1") != group2.end());
-  BOOST_CHECK(group2.find("b1") != group2.end());
-  BOOST_CHECK(group2.find("c1") != group2.end());
-
-  const auto &group3 = nodeIDsMap["group3"];
-  BOOST_CHECK_EQUAL(group3.size(), 3);
-  BOOST_CHECK(group3.find("a2") != group3.end());
-  BOOST_CHECK(group3.find("b2") != group3.end());
-  BOOST_CHECK(group3.find("c2") != group3.end());
+    gatewayNodeManager->onReceiveStatusSeq(p2pID, 1, statusChanged);
+    BOOST_CHECK(statusChanged);
 }
 
-BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_onReceiveNodeIDs) {
-  auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
+BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_query)
+{
+    auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
 
-  const std::string json =
-      "{\"statusSeq\":110,\"nodeInfoList\":[{\"groupID\":\"group1\","
-      "\"nodeIDs\":["
-      "\"a0\",\"b0\",\"c0\"]},{\"groupID\":\"group2\",\"nodeIDs\":[\"a1\","
-      "\"b1\",\"c1\"]},{\"groupID\":\"group3\",\"nodeIDs\":[\"a2\",\"b2\","
-      "\"c2\"]}]}";
-  std::string p2pID = "xxxxxxxxxxxxxxxxxxxxx";
-  gatewayNodeManager->onReceiveNodeIDs(p2pID, json);
-  bool statusChanged = false;
-  gatewayNodeManager->onReceiveStatusSeq(p2pID, 110, statusChanged);
-  BOOST_CHECK(!statusChanged);
+    const std::string json =
+        "{\"statusSeq\":110,\"nodeInfoList\":[{\"groupID\":\"group1\","
+        "\"nodeIDs\":["
+        "\"a0\",\"b0\",\"c0\"]},{\"groupID\":\"group2\",\"nodeIDs\":[\"a1\","
+        "\"b1\",\"c1\"]},{\"groupID\":\"group3\",\"nodeIDs\":[\"a2\",\"b2\","
+        "\"c2\"]}]}";
+    /*
+    {
+    "statusSeq": 1,
+    "nodeInfoList": [
+    {
+    "groupID": "group1",
+    "nodeIDs": [
+      "a0",
+      "b0",
+      "c0"
+    ]
+    },
+    {
+    "groupID": "group2",
+    "nodeIDs": [
+      "a1",
+      "b1",
+      "c1"
+    ]
+    },
+    {
+    "groupID": "group3",
+    "nodeIDs": [
+      "a2",
+      "b2",
+      "c2"
+    ]
+    }
+    ]
+    }*/
 
-  gatewayNodeManager->onReceiveStatusSeq(p2pID, 1, statusChanged);
-  BOOST_CHECK(statusChanged);
-}
+    std::string group1 = "group1";
+    std::string group2 = "group2";
+    std::string group3 = "group3";
 
-BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_query) {
-  auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
+    std::string p2pID1 = "xxxxx";
+    std::string p2pID2 = "yyyyy";
+    std::string p2pID3 = "zzzzz";
 
-  const std::string json =
-      "{\"statusSeq\":110,\"nodeInfoList\":[{\"groupID\":\"group1\","
-      "\"nodeIDs\":["
-      "\"a0\",\"b0\",\"c0\"]},{\"groupID\":\"group2\",\"nodeIDs\":[\"a1\","
-      "\"b1\",\"c1\"]},{\"groupID\":\"group3\",\"nodeIDs\":[\"a2\",\"b2\","
-      "\"c2\"]}]}";
-  /*
-  {
-  "statusSeq": 1,
-  "nodeInfoList": [
-  {
-  "groupID": "group1",
-  "nodeIDs": [
-    "a0",
-    "b0",
-    "c0"
-  ]
-  },
-  {
-  "groupID": "group2",
-  "nodeIDs": [
-    "a1",
-    "b1",
-    "c1"
-  ]
-  },
-  {
-  "groupID": "group3",
-  "nodeIDs": [
-    "a2",
-    "b2",
-    "c2"
-  ]
-  }
-  ]
-  }*/
+    gatewayNodeManager->onReceiveNodeIDs(p2pID1, json);
 
-  std::string group1 = "group1";
-  std::string group2 = "group2";
-  std::string group3 = "group3";
-
-  std::string p2pID1 = "xxxxx";
-  std::string p2pID2 = "yyyyy";
-  std::string p2pID3 = "zzzzz";
-
-  gatewayNodeManager->onReceiveNodeIDs(p2pID1, json);
-
-  std::set<P2pID> p2pIDs1;
-  auto r = gatewayNodeManager->queryP2pIDsByGroupID(group1, p2pIDs1);
-  BOOST_CHECK(r);
-  BOOST_CHECK_EQUAL(p2pIDs1.size(), 1);
-  BOOST_CHECK_EQUAL(*p2pIDs1.begin(), p2pID1);
-
-  std::set<P2pID> p2pIDs2;
-  r = gatewayNodeManager->queryP2pIDs(group1, "a0", p2pIDs2);
-  BOOST_CHECK(r);
-  BOOST_CHECK_EQUAL(p2pIDs2.size(), 1);
-  BOOST_CHECK_EQUAL(*p2pIDs2.begin(), p2pID1);
-
-  gatewayNodeManager->onReceiveNodeIDs(p2pID2, json);
-
-  std::set<P2pID> p2pIDs3;
-  r = gatewayNodeManager->queryP2pIDsByGroupID(group2, p2pIDs3);
-  BOOST_CHECK(r);
-  BOOST_CHECK_EQUAL(p2pIDs3.size(), 2);
-
-  std::set<P2pID> p2pIDs4;
-  r = gatewayNodeManager->queryP2pIDs(group2, "a1", p2pIDs4);
-  BOOST_CHECK(r);
-  BOOST_CHECK_EQUAL(p2pIDs4.size(), 2);
-
-  gatewayNodeManager->onReceiveNodeIDs(p2pID3, json);
-
-  std::set<P2pID> p2pIDs5;
-  r = gatewayNodeManager->queryP2pIDsByGroupID(group3, p2pIDs5);
-  BOOST_CHECK(r);
-  BOOST_CHECK_EQUAL(p2pIDs5.size(), 3);
-
-  std::set<P2pID> p2pIDs6;
-  r = gatewayNodeManager->queryP2pIDs(group3, "a2", p2pIDs6);
-  BOOST_CHECK(r);
-  BOOST_CHECK_EQUAL(p2pIDs6.size(), 3);
-}
-
-BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_remove) {
-  auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
-
-  const std::string json =
-      "{\"statusSeq\":110,\"nodeInfoList\":[{\"groupID\":\"group1\","
-      "\"nodeIDs\":["
-      "\"a0\",\"b0\",\"c0\"]},{\"groupID\":\"group2\",\"nodeIDs\":[\"a1\","
-      "\"b1\",\"c1\"]},{\"groupID\":\"group3\",\"nodeIDs\":[\"a2\",\"b2\","
-      "\"c2\"]}]}";
-
-  std::string group1 = "group1";
-  std::string group2 = "group2";
-  std::string group3 = "group3";
-
-  std::string p2pID1 = "xxxxx";
-  std::string p2pID2 = "yyyyy";
-  std::string p2pID3 = "zzzzz";
-
-  gatewayNodeManager->onReceiveNodeIDs(p2pID1, json);
-  gatewayNodeManager->onReceiveNodeIDs(p2pID2, json);
-  gatewayNodeManager->onReceiveNodeIDs(p2pID3, json);
-
-  {
-    std::set<P2pID> p2pIDs1;
-    auto r = gatewayNodeManager->queryP2pIDsByGroupID(group1, p2pIDs1);
-    BOOST_CHECK(r);
-    BOOST_CHECK_EQUAL(p2pIDs1.size(), 3);
-    BOOST_CHECK(p2pIDs1.find(p2pID2) != p2pIDs1.end());
-    BOOST_CHECK(p2pIDs1.find(p2pID3) != p2pIDs1.end());
-    BOOST_CHECK(p2pIDs1.find(p2pID1) != p2pIDs1.end());
-
-    std::set<P2pID> p2pIDs2;
-    r = gatewayNodeManager->queryP2pIDs(group1, "a0", p2pIDs2);
-    BOOST_CHECK(r);
-    BOOST_CHECK_EQUAL(p2pIDs2.size(), 3);
-    BOOST_CHECK(p2pIDs2.find(p2pID2) != p2pIDs2.end());
-    BOOST_CHECK(p2pIDs2.find(p2pID3) != p2pIDs2.end());
-    BOOST_CHECK(p2pIDs2.find(p2pID1) != p2pIDs2.end());
-  }
-
-  gatewayNodeManager->onRemoveNodeIDs(p2pID1);
-  {
-    std::set<P2pID> p2pIDs1;
-    auto r = gatewayNodeManager->queryP2pIDsByGroupID(group1, p2pIDs1);
-    BOOST_CHECK(r);
-    BOOST_CHECK_EQUAL(p2pIDs1.size(), 2);
-    BOOST_CHECK(p2pIDs1.find(p2pID2) != p2pIDs1.end());
-    BOOST_CHECK(p2pIDs1.find(p2pID3) != p2pIDs1.end());
-
-    std::set<P2pID> p2pIDs2;
-    r = gatewayNodeManager->queryP2pIDs(group1, "a0", p2pIDs2);
-    BOOST_CHECK(r);
-    BOOST_CHECK_EQUAL(p2pIDs2.size(), 2);
-    BOOST_CHECK(p2pIDs2.find(p2pID2) != p2pIDs2.end());
-    BOOST_CHECK(p2pIDs2.find(p2pID3) != p2pIDs2.end());
-  }
-
-  gatewayNodeManager->onRemoveNodeIDs(p2pID2);
-  {
     std::set<P2pID> p2pIDs1;
     auto r = gatewayNodeManager->queryP2pIDsByGroupID(group1, p2pIDs1);
     BOOST_CHECK(r);
     BOOST_CHECK_EQUAL(p2pIDs1.size(), 1);
-    BOOST_CHECK(p2pIDs1.find(p2pID3) != p2pIDs1.end());
+    BOOST_CHECK_EQUAL(*p2pIDs1.begin(), p2pID1);
 
     std::set<P2pID> p2pIDs2;
     r = gatewayNodeManager->queryP2pIDs(group1, "a0", p2pIDs2);
     BOOST_CHECK(r);
     BOOST_CHECK_EQUAL(p2pIDs2.size(), 1);
-    BOOST_CHECK(p2pIDs2.find(p2pID3) != p2pIDs2.end());
-  }
+    BOOST_CHECK_EQUAL(*p2pIDs2.begin(), p2pID1);
 
-  gatewayNodeManager->onRemoveNodeIDs(p2pID3);
-  {
-    std::set<P2pID> p2pIDs1;
-    auto r = gatewayNodeManager->queryP2pIDsByGroupID(group1, p2pIDs1);
-    BOOST_CHECK(!r);
+    gatewayNodeManager->onReceiveNodeIDs(p2pID2, json);
 
-    std::set<P2pID> p2pIDs2;
-    r = gatewayNodeManager->queryP2pIDs(group1, "a0", p2pIDs2);
-    BOOST_CHECK(!r);
-  }
+    std::set<P2pID> p2pIDs3;
+    r = gatewayNodeManager->queryP2pIDsByGroupID(group2, p2pIDs3);
+    BOOST_CHECK(r);
+    BOOST_CHECK_EQUAL(p2pIDs3.size(), 2);
+
+    std::set<P2pID> p2pIDs4;
+    r = gatewayNodeManager->queryP2pIDs(group2, "a1", p2pIDs4);
+    BOOST_CHECK(r);
+    BOOST_CHECK_EQUAL(p2pIDs4.size(), 2);
+
+    gatewayNodeManager->onReceiveNodeIDs(p2pID3, json);
+
+    std::set<P2pID> p2pIDs5;
+    r = gatewayNodeManager->queryP2pIDsByGroupID(group3, p2pIDs5);
+    BOOST_CHECK(r);
+    BOOST_CHECK_EQUAL(p2pIDs5.size(), 3);
+
+    std::set<P2pID> p2pIDs6;
+    r = gatewayNodeManager->queryP2pIDs(group3, "a2", p2pIDs6);
+    BOOST_CHECK(r);
+    BOOST_CHECK_EQUAL(p2pIDs6.size(), 3);
+}
+
+BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_remove)
+{
+    auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
+
+    const std::string json =
+        "{\"statusSeq\":110,\"nodeInfoList\":[{\"groupID\":\"group1\","
+        "\"nodeIDs\":["
+        "\"a0\",\"b0\",\"c0\"]},{\"groupID\":\"group2\",\"nodeIDs\":[\"a1\","
+        "\"b1\",\"c1\"]},{\"groupID\":\"group3\",\"nodeIDs\":[\"a2\",\"b2\","
+        "\"c2\"]}]}";
+
+    std::string group1 = "group1";
+    std::string group2 = "group2";
+    std::string group3 = "group3";
+
+    std::string p2pID1 = "xxxxx";
+    std::string p2pID2 = "yyyyy";
+    std::string p2pID3 = "zzzzz";
+
+    gatewayNodeManager->onReceiveNodeIDs(p2pID1, json);
+    gatewayNodeManager->onReceiveNodeIDs(p2pID2, json);
+    gatewayNodeManager->onReceiveNodeIDs(p2pID3, json);
+
+    {
+        std::set<P2pID> p2pIDs1;
+        auto r = gatewayNodeManager->queryP2pIDsByGroupID(group1, p2pIDs1);
+        BOOST_CHECK(r);
+        BOOST_CHECK_EQUAL(p2pIDs1.size(), 3);
+        BOOST_CHECK(p2pIDs1.find(p2pID2) != p2pIDs1.end());
+        BOOST_CHECK(p2pIDs1.find(p2pID3) != p2pIDs1.end());
+        BOOST_CHECK(p2pIDs1.find(p2pID1) != p2pIDs1.end());
+
+        std::set<P2pID> p2pIDs2;
+        r = gatewayNodeManager->queryP2pIDs(group1, "a0", p2pIDs2);
+        BOOST_CHECK(r);
+        BOOST_CHECK_EQUAL(p2pIDs2.size(), 3);
+        BOOST_CHECK(p2pIDs2.find(p2pID2) != p2pIDs2.end());
+        BOOST_CHECK(p2pIDs2.find(p2pID3) != p2pIDs2.end());
+        BOOST_CHECK(p2pIDs2.find(p2pID1) != p2pIDs2.end());
+    }
+
+    gatewayNodeManager->onRemoveNodeIDs(p2pID1);
+    {
+        std::set<P2pID> p2pIDs1;
+        auto r = gatewayNodeManager->queryP2pIDsByGroupID(group1, p2pIDs1);
+        BOOST_CHECK(r);
+        BOOST_CHECK_EQUAL(p2pIDs1.size(), 2);
+        BOOST_CHECK(p2pIDs1.find(p2pID2) != p2pIDs1.end());
+        BOOST_CHECK(p2pIDs1.find(p2pID3) != p2pIDs1.end());
+
+        std::set<P2pID> p2pIDs2;
+        r = gatewayNodeManager->queryP2pIDs(group1, "a0", p2pIDs2);
+        BOOST_CHECK(r);
+        BOOST_CHECK_EQUAL(p2pIDs2.size(), 2);
+        BOOST_CHECK(p2pIDs2.find(p2pID2) != p2pIDs2.end());
+        BOOST_CHECK(p2pIDs2.find(p2pID3) != p2pIDs2.end());
+    }
+
+    gatewayNodeManager->onRemoveNodeIDs(p2pID2);
+    {
+        std::set<P2pID> p2pIDs1;
+        auto r = gatewayNodeManager->queryP2pIDsByGroupID(group1, p2pIDs1);
+        BOOST_CHECK(r);
+        BOOST_CHECK_EQUAL(p2pIDs1.size(), 1);
+        BOOST_CHECK(p2pIDs1.find(p2pID3) != p2pIDs1.end());
+
+        std::set<P2pID> p2pIDs2;
+        r = gatewayNodeManager->queryP2pIDs(group1, "a0", p2pIDs2);
+        BOOST_CHECK(r);
+        BOOST_CHECK_EQUAL(p2pIDs2.size(), 1);
+        BOOST_CHECK(p2pIDs2.find(p2pID3) != p2pIDs2.end());
+    }
+
+    gatewayNodeManager->onRemoveNodeIDs(p2pID3);
+    {
+        std::set<P2pID> p2pIDs1;
+        auto r = gatewayNodeManager->queryP2pIDsByGroupID(group1, p2pIDs1);
+        BOOST_CHECK(!r);
+
+        std::set<P2pID> p2pIDs2;
+        r = gatewayNodeManager->queryP2pIDs(group1, "a0", p2pIDs2);
+        BOOST_CHECK(!r);
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

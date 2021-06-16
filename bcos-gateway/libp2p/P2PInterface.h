@@ -27,55 +27,54 @@
 #include <bcos-gateway/libp2p/P2PMessage.h>
 #include <memory>
 
-namespace bcos {
-namespace stat {
+namespace bcos
+{
+namespace stat
+{
 class NetworkStatHandler;
 class ChannelNetworkStatHandler;
-} // namespace stat
+}  // namespace stat
 
-namespace gateway {
+namespace gateway
+{
 class P2PMessage;
 class MessageFactory;
 class P2PSession;
 using CallbackFuncWithSession =
-    std::function<void(NetworkException, std::shared_ptr<P2PSession>,
-                       std::shared_ptr<P2PMessage>)>;
+    std::function<void(NetworkException, std::shared_ptr<P2PSession>, std::shared_ptr<P2PMessage>)>;
 using DisconnectCallbackFuncWithSession =
     std::function<void(NetworkException, std::shared_ptr<P2PSession>)>;
 
-class P2PInterface {
+class P2PInterface
+{
 public:
-  using Ptr = std::shared_ptr<P2PInterface>;
-  virtual ~P2PInterface(){};
+    using Ptr = std::shared_ptr<P2PInterface>;
+    virtual ~P2PInterface(){};
 
-  virtual void start() = 0;
-  virtual void stop() = 0;
+    virtual void start() = 0;
+    virtual void stop() = 0;
 
-  virtual P2pID id() const = 0;
+    virtual P2pID id() const = 0;
 
-  virtual std::shared_ptr<P2PMessage>
-  sendMessageByNodeID(P2pID nodeID, std::shared_ptr<P2PMessage> message) = 0;
+    virtual std::shared_ptr<P2PMessage> sendMessageByNodeID(
+        P2pID nodeID, std::shared_ptr<P2PMessage> message) = 0;
 
-  virtual void asyncSendMessageByNodeID(P2pID nodeID,
-                                        std::shared_ptr<P2PMessage> message,
-                                        CallbackFuncWithSession callback,
-                                        Options options = Options()) = 0;
+    virtual void asyncSendMessageByNodeID(P2pID nodeID, std::shared_ptr<P2PMessage> message,
+        CallbackFuncWithSession callback, Options options = Options()) = 0;
 
-  virtual void asyncBroadcastMessage(std::shared_ptr<P2PMessage> message,
-                                     Options options) = 0;
+    virtual void asyncBroadcastMessage(std::shared_ptr<P2PMessage> message, Options options) = 0;
 
-  virtual P2PSessionInfos sessionInfos() = 0;
+    virtual P2PSessionInfos sessionInfos() = 0;
 
-  virtual bool isConnected(P2pID const &_nodeID) const = 0;
+    virtual bool isConnected(P2pID const& _nodeID) const = 0;
 
-  virtual std::shared_ptr<Host> host() = 0;
+    virtual std::shared_ptr<Host> host() = 0;
 
-  virtual std::shared_ptr<MessageFactory> messageFactory() = 0;
+    virtual std::shared_ptr<MessageFactory> messageFactory() = 0;
 
-  virtual std::shared_ptr<P2PSession>
-  getP2PSessionByNodeId(P2pID const &_nodeID) = 0;
+    virtual std::shared_ptr<P2PSession> getP2PSessionByNodeId(P2pID const& _nodeID) = 0;
 };
 
-} // namespace gateway
+}  // namespace gateway
 
-} // namespace bcos
+}  // namespace bcos
