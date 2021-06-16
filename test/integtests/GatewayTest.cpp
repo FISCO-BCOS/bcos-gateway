@@ -33,15 +33,16 @@ BOOST_AUTO_TEST_CASE(test_echo)
 {
     std::string groupID = "1";
     std::string nodeIDBase = "node";
-    std::string configPathBase = "../test/integtests/node";
+    // ../test/unittests/data
+    std::string configPathBase = "./node";
     uint nodeCount = 3;
 
     std::vector<bcos::front::FrontService::Ptr> frontServiceVector;
 
     for (uint i = 0; i < nodeCount; ++i)
     {
-        auto frontService = buildFrontService(
-            groupID, nodeIDBase + std::to_string(i), configPathBase + std::to_string(i) + "/");
+        auto frontService = buildFrontService(groupID, nodeIDBase + std::to_string(i),
+            configPathBase + std::to_string(i) + "/config.ini");
         auto frontServiceWeakptr = std::weak_ptr<bcos::front::FrontService>(frontService);
         // register message dispather for front service
         frontService->registerModuleMessageDispatcher(
@@ -65,7 +66,7 @@ BOOST_AUTO_TEST_CASE(test_echo)
         frontService->asyncGetNodeIDs([frontService, nodeCount](Error::Ptr _error,
                                           std::shared_ptr<const crypto::NodeIDs> _nodeIDs) {
             BOOST_CHECK(_error == nullptr);
-            BOOST_CHECK_EQUAL(_nodeIDs->size(), nodeCount);
+            BOOST_CHECK_EQUAL(_nodeIDs->size(), nodeCount - 1);
 
             for (const auto& nodeID : *_nodeIDs)
             {
@@ -73,11 +74,15 @@ BOOST_AUTO_TEST_CASE(test_echo)
 
                 auto payload = bcos::bytesConstRef((bcos::byte*)sendStr.data(), sendStr.size());
 
+                std::promise<bool> p;
+                auto f = p.get_future();
+
                 frontService->asyncSendMessageByNodeID(bcos::protocol::ModuleID::AMOP, nodeID,
                     payload, 10000,
-                    [sendStr](Error::Ptr _error, bcos::crypto::NodeIDPtr _nodeID,
+                    [sendStr, &p](Error::Ptr _error, bcos::crypto::NodeIDPtr _nodeID,
                         bytesConstRef _data, const std::string& _id,
                         bcos::front::ResponseFunc _respFunc) {
+                        p.set_value(true);
                         (void)_respFunc;
                         (void)_nodeID;
                         BOOST_CHECK(!_id.empty());
@@ -85,6 +90,8 @@ BOOST_AUTO_TEST_CASE(test_echo)
                         std::string retStr = std::string(_data.begin(), _data.end());
                         BOOST_CHECK_EQUAL(sendStr, retStr);
                     });
+
+                f.get();
             }
         });
     }

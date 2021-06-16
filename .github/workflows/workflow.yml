@@ -87,7 +87,7 @@ jobs:
       - name: install Ubuntu dependencies
         run: sudo apt install -y git curl openssl build-essential cmake ccache
       - name: build gateway cert
-        run: mkdir -p build/integtest && bash tools/build_gateway_env.sh -p 30300 -c 3 -d `pwd`/build/integtests
+        run: bash tools/build_gateway_env.sh -p 30300 -c 3 -d `pwd`/build
       - name: configure
         run: mkdir -p build && cd build && cmake -DTESTS=on -DBUILD_INTEG_TESTS=on ../
       - name: compile
@@ -127,7 +127,7 @@ jobs:
       - name: install Ubuntu dependencies
         run: sudo apt-get install -y software-properties-common python-software-properties && sudo add-apt-repository ppa:ubuntu-toolchain-r/test && sudo apt-get update && sudo apt install -y git curl openssl build-essential cmake ccache gcc-7 g++-7 lcov&& sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7 && sudo update-alternatives --config gcc
       - name: build gateway cert
-        run: mkdir -p build/integtest && bash tools/build_gateway_env.sh -p 30300 -c 3 -d `pwd`/build/integtests
+        run: bash tools/build_gateway_env.sh -p 30300 -c 3 -d `pwd`/build/
       - name: configure
         run: mkdir -p build && cd build && cmake ../ -DTESTS=ON -DBUILD_INTEG_TESTS=on -DCOVERAGE=ON
       - name: compile
@@ -171,7 +171,7 @@ jobs:
           yum install -y epel-release centos-release-scl
           yum install -y git make gcc gcc-c++ glibc-static glibc-devel openssl cmake3 ccache devtoolset-7 && source /opt/rh/devtoolset-7/enable
       - name: build gateway cert
-        run: mkdir -p build/integtest && bash tools/build_gateway_env.sh -p 30300 -c 3 -d `pwd`/build/integtests
+        run: bash tools/build_gateway_env.sh -p 30300 -c 3 -d `pwd`/build
       - name: configure and compile
         run: |
           source /opt/rh/devtoolset-7/enable

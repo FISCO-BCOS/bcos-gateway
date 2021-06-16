@@ -71,6 +71,7 @@ parse_params() {
             output_dir="$OPTARG"
             mkdir -p "$output_dir"
             dir_must_exists "${output_dir}"
+            file_dir="$output_dir"
             ;;
         l) listen_ip="$OPTARG" ;;
         p) listen_port="$OPTARG" ;;
@@ -105,7 +106,7 @@ generate_config_ini() {
 
 [cert]
     ; directory the certificates located in
-    ca_path=./
+    ca_path=${file_dir}
     ; the ca certificate file
     ca_cert=ca.crt
     ; the node private key file

@@ -154,6 +154,7 @@ void GatewayConfig::initConfig(std::string const& _configPath)
         boost::filesystem::path full_path(boost::filesystem::current_path());
 
         GATEWAY_CONFIG_LOG(ERROR) << LOG_KV("configPath", _configPath)
+                                  << LOG_KV("currentPath", full_path.string())
                                   << LOG_KV("initConfig error: ", boost::diagnostic_information(e));
 
         BOOST_THROW_EXCEPTION(
