@@ -27,62 +27,65 @@
 #include <bcos-gateway/GatewayConfig.h>
 #include <boost/asio/ssl.hpp>
 
-namespace bcos {
-namespace gateway {
-
-class GatewayFactory {
+namespace bcos
+{
+namespace gateway
+{
+class GatewayFactory
+{
 public:
-  using Ptr = std::shared_ptr<GatewayFactory>;
+    using Ptr = std::shared_ptr<GatewayFactory>;
 
-  GatewayFactory() {
-    initCert2PubHexHandler();
-    initSSLContextPubHexHandler();
-  }
+    GatewayFactory()
+    {
+        initCert2PubHexHandler();
+        initSSLContextPubHexHandler();
+    }
 
-  virtual ~GatewayFactory() = default;
+    virtual ~GatewayFactory() = default;
 
 public:
-  // init the function calc public hex from the cert
-  void initCert2PubHexHandler();
-  // init the function calc public key from the ssl context
-  void initSSLContextPubHexHandler();
+    // init the function calc public hex from the cert
+    void initCert2PubHexHandler();
+    // init the function calc public key from the ssl context
+    void initSSLContextPubHexHandler();
 
 private:
-  std::function<bool(X509 *cert, std::string &pubHex)> m_sslContextPubHandler;
+    std::function<bool(X509* cert, std::string& pubHex)> m_sslContextPubHandler;
 
-  std::function<bool(const std::string &priKey, std::string &pubHex)>
-      m_certPubHexHandler;
-
-public:
-  std::function<bool(X509 *cert, std::string &pubHex)> sslContextPubHandler() {
-    return m_sslContextPubHandler;
-  }
-
-  std::function<bool(const std::string &priKey, std::string &pubHex)>
-  certPubHexHandler() {
-    return m_certPubHexHandler;
-  }
+    std::function<bool(const std::string& priKey, std::string& pubHex)> m_certPubHexHandler;
 
 public:
-  // build ssl context
-  std::shared_ptr<boost::asio::ssl::context>
-  buildSSLContext(const GatewayConfig::CertConfig &_certConfig);
-  // build sm ssl context
-  std::shared_ptr<boost::asio::ssl::context>
-  buildSSLContext(const GatewayConfig::SMCertConfig &_smCertConfig);
+    std::function<bool(X509* cert, std::string& pubHex)> sslContextPubHandler()
+    {
+        return m_sslContextPubHandler;
+    }
 
-  /**
-   * @brief: construct Gateway
-   * @param _configPath: config.ini path
-   * @return void
-   */
-  Gateway::Ptr buildGateway(const std::string &_configPath);
-  /**
-   * @brief: construct Gateway
-   * @param _config: config parameter object
-   * @return void
-   */
-  Gateway::Ptr buildGateway(GatewayConfig::Ptr _config);
+    std::function<bool(const std::string& priKey, std::string& pubHex)> certPubHexHandler()
+    {
+        return m_certPubHexHandler;
+    }
+
+public:
+    // build ssl context
+    std::shared_ptr<boost::asio::ssl::context> buildSSLContext(
+        const GatewayConfig::CertConfig& _certConfig);
+    // build sm ssl context
+    std::shared_ptr<boost::asio::ssl::context> buildSSLContext(
+        const GatewayConfig::SMCertConfig& _smCertConfig);
+
+    /**
+     * @brief: construct Gateway
+     * @param _configPath: config.ini path
+     * @return void
+     */
+    Gateway::Ptr buildGateway(const std::string& _configPath);
+    /**
+     * @brief: construct Gateway
+     * @param _config: config parameter object
+     * @return void
+     */
+    Gateway::Ptr buildGateway(GatewayConfig::Ptr _config);
 };
-} // namespace gateway
-} // namespace bcos
+}  // namespace gateway
+}  // namespace bcos

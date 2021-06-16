@@ -25,40 +25,44 @@
 #include <string>
 #include <vector>
 
-namespace bcos {
-namespace gateway {
-
-class Message {
+namespace bcos
+{
+namespace gateway
+{
+class Message
+{
 public:
-  using Ptr = std::shared_ptr<Message>;
+    using Ptr = std::shared_ptr<Message>;
 
 public:
-  virtual ~Message() {}
+    virtual ~Message() {}
 
-  virtual uint32_t length() const = 0;
-  virtual uint32_t seq() const = 0;
-  virtual uint16_t version() const = 0;
-  virtual uint16_t packetType() const = 0;
-  virtual uint16_t ext() const = 0;
-  virtual bool isRespPacket() const = 0;
-  virtual bool encode(bcos::bytes &_buffer) = 0;
-  virtual ssize_t decode(bytesConstRef _buffer) = 0;
+    virtual uint32_t length() const = 0;
+    virtual uint32_t seq() const = 0;
+    virtual uint16_t version() const = 0;
+    virtual uint16_t packetType() const = 0;
+    virtual uint16_t ext() const = 0;
+    virtual bool isRespPacket() const = 0;
+    virtual bool encode(bcos::bytes& _buffer) = 0;
+    virtual ssize_t decode(bytesConstRef _buffer) = 0;
 };
 
-class MessageFactory {
+class MessageFactory
+{
 public:
-  using Ptr = std::shared_ptr<MessageFactory>;
+    using Ptr = std::shared_ptr<MessageFactory>;
 
 public:
-  virtual ~MessageFactory() {}
-  virtual Message::Ptr buildMessage() = 0;
+    virtual ~MessageFactory() {}
+    virtual Message::Ptr buildMessage() = 0;
 
-  virtual uint32_t newSeq() {
-    uint32_t seq = ++m_seq;
-    return seq;
-  }
-  std::atomic<uint32_t> m_seq = {1};
+    virtual uint32_t newSeq()
+    {
+        uint32_t seq = ++m_seq;
+        return seq;
+    }
+    std::atomic<uint32_t> m_seq = {1};
 };
 
-} // namespace gateway
-} // namespace bcos
+}  // namespace gateway
+}  // namespace bcos

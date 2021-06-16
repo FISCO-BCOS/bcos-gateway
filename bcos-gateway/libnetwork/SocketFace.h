@@ -26,25 +26,28 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast.hpp>
 
-namespace bcos {
-namespace gateway {
-class SocketFace {
+namespace bcos
+{
+namespace gateway
+{
+class SocketFace
+{
 public:
-  SocketFace() = default;
+    SocketFace() = default;
 
-  virtual ~SocketFace(){};
-  virtual bool isConnected() const = 0;
-  virtual void close() = 0;
-  virtual bi::tcp::endpoint remoteEndpoint(
-      boost::system::error_code ec = boost::system::error_code()) = 0;
-  virtual bi::tcp::endpoint
-  localEndpoint(boost::system::error_code ec = boost::system::error_code()) = 0;
+    virtual ~SocketFace(){};
+    virtual bool isConnected() const = 0;
+    virtual void close() = 0;
+    virtual bi::tcp::endpoint remoteEndpoint(
+        boost::system::error_code ec = boost::system::error_code()) = 0;
+    virtual bi::tcp::endpoint localEndpoint(
+        boost::system::error_code ec = boost::system::error_code()) = 0;
 
-  virtual bi::tcp::socket &ref() = 0;
-  virtual ba::ssl::stream<bi::tcp::socket> &sslref() = 0;
+    virtual bi::tcp::socket& ref() = 0;
+    virtual ba::ssl::stream<bi::tcp::socket>& sslref() = 0;
 
-  virtual const NodeIPEndpoint &nodeIPEndpoint() const = 0;
-  virtual void setNodeIPEndpoint(NodeIPEndpoint _nodeIPEndpoint) = 0;
+    virtual const NodeIPEndpoint& nodeIPEndpoint() const = 0;
+    virtual void setNodeIPEndpoint(NodeIPEndpoint _nodeIPEndpoint) = 0;
 };
-} // namespace gateway
-} // namespace bcos
+}  // namespace gateway
+}  // namespace bcos
