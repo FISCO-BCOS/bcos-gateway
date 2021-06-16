@@ -20,6 +20,7 @@
  */
 
 #include "../common/FrontServiceBuilder.h"
+#include <bcos-framework/interfaces/protocol/CommonError.h>
 #include <bcos-framework/testutils/TestPromptFixture.h>
 #include <bcos-gateway/Gateway.h>
 #include <boost/test/unit_test.hpp>
@@ -29,13 +30,14 @@ using namespace bcos::test;
 
 BOOST_FIXTURE_TEST_SUITE(GatewayTest, TestPromptFixture)
 
-BOOST_AUTO_TEST_CASE(test_echo)
+static uint nodeCount = 3;
+
+std::vector<bcos::front::FrontService::Ptr> buildFrontServiceVector()
 {
     std::string groupID = "1";
     std::string nodeIDBase = "node";
     // ../test/unittests/data
     std::string configPathBase = "./node";
-    uint nodeCount = 3;
 
     std::vector<bcos::front::FrontService::Ptr> frontServiceVector;
 
@@ -60,10 +62,16 @@ BOOST_AUTO_TEST_CASE(test_echo)
 
     std::this_thread::sleep_for(std::chrono::seconds(3));
 
+    return frontServiceVector;
+}
+
+BOOST_AUTO_TEST_CASE(test_FrontServiceEcho)
+{
+    auto frontServiceVector = buildFrontServiceVector();
     // echo test
     for (const auto& frontService : frontServiceVector)
     {
-        frontService->asyncGetNodeIDs([frontService, nodeCount](Error::Ptr _error,
+        frontService->asyncGetNodeIDs([frontService](Error::Ptr _error,
                                           std::shared_ptr<const crypto::NodeIDs> _nodeIDs) {
             BOOST_CHECK(_error == nullptr);
             BOOST_CHECK_EQUAL(_nodeIDs->size(), nodeCount - 1);
@@ -96,4 +104,46 @@ BOOST_AUTO_TEST_CASE(test_echo)
         });
     }
 }
+
+BOOST_AUTO_TEST_CASE(test_FrontServiceTimeout)
+{
+    auto frontServiceVector = buildFrontServiceVector();
+    // echo test
+    for (const auto& frontService : frontServiceVector)
+    {
+        frontService->asyncGetNodeIDs([frontService](Error::Ptr _error,
+                                          std::shared_ptr<const crypto::NodeIDs> _nodeIDs) {
+            BOOST_CHECK(_error == nullptr);
+            BOOST_CHECK_EQUAL(_nodeIDs->size(), nodeCount - 1);
+
+            for (const auto& nodeID : *_nodeIDs)
+            {
+                std::string sendStr = boost::uuids::to_string(boost::uuids::random_generator()());
+
+                auto payload = bcos::bytesConstRef((bcos::byte*)sendStr.data(), sendStr.size());
+
+                std::promise<bool> p;
+                auto f = p.get_future();
+
+                frontService->asyncSendMessageByNodeID(bcos::protocol::ModuleID::AMOP + 1, nodeID,
+                    payload, 10000,
+                    [sendStr, &p](Error::Ptr _error, bcos::crypto::NodeIDPtr _nodeID,
+                        bytesConstRef _data, const std::string& _id,
+                        bcos::front::ResponseFunc _respFunc) {
+                        p.set_value(true);
+                        (void)_respFunc;
+                        (void)_nodeID;
+                        (void)_data;
+                        BOOST_CHECK(!_id.empty());
+                        BOOST_CHECK(_error != nullptr);
+                        BOOST_CHECK_EQUAL(
+                            _error->errorCode(), bcos::protocol::CommonError::TIMEOUT);
+                    });
+
+                f.get();
+            }
+        });
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()
