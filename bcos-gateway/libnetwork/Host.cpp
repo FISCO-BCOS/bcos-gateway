@@ -326,7 +326,7 @@ void Host::handshakeServer(const boost::system::error_code& error,
         HOST_LOG(INFO) << LOG_DESC("handshakeServer succ")
                        << LOG_KV("remote endpoint", socket->remoteEndpoint())
                        << LOG_KV("nodeid", shortId(info.p2pID));
-        startPeerSession(info, socket, m_connectionHandler);
+        startPeerSession(info, socket, false, m_connectionHandler);
     }
 }
 
@@ -345,11 +345,12 @@ void Host::handshakeServer(const boost::system::error_code& error,
  */
 // TODO: asyncConnect pass handle to startPeerSession, make use of it
 void Host::startPeerSession(P2PInfo const& p2pInfo, std::shared_ptr<SocketFace> const& socket,
+    bool _client,
     std::function<void(NetworkException, P2PInfo const&, std::shared_ptr<SessionFace>)>)
 {
     auto weakHost = std::weak_ptr<Host>(shared_from_this());
     std::shared_ptr<SessionFace> ps =
-        m_sessionFactory->create_session(weakHost, socket, m_messageFactory);
+        m_sessionFactory->create_session(weakHost, socket, _client, m_messageFactory);
 
     auto connectionHandler = m_connectionHandler;
     m_threadPool->enqueue([ps, connectionHandler, p2pInfo]() {
@@ -364,7 +365,7 @@ void Host::startPeerSession(P2PInfo const& p2pInfo, std::shared_ptr<SocketFace> 
     });
     HOST_LOG(INFO) << LOG_DESC("startPeerSession, Remote=") << socket->remoteEndpoint()
                    << LOG_KV("local endpoint", socket->localEndpoint())
-                   << LOG_KV("p2pid", shortId(p2pInfo.p2pID));
+                   << LOG_KV("p2pid", shortId(p2pInfo.p2pID)) << LOG_KV("client", _client);
 }
 
 /**
@@ -525,7 +526,7 @@ void Host::handshakeClient(const boost::system::error_code& error,
         obtainNodeInfo(info, node_info);
         HOST_LOG(INFO) << LOG_DESC("handshakeClient succ")
                        << LOG_KV("local endpoint", socket->localEndpoint());
-        startPeerSession(info, socket, callback);
+        startPeerSession(info, socket, true, callback);
     }
 }
 

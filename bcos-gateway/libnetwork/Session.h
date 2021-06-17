@@ -49,6 +49,8 @@ public:
     using Ptr = std::shared_ptr<Session>;
 
     virtual void start() override;
+    virtual bool clientModel() override { return m_clientModel; }
+    virtual void setClientModel(bool _clientModel) { m_clientModel = _clientModel; }
     virtual void disconnect(DisconnectReason _reason) override;
 
     virtual void asyncSendMessage(
@@ -161,6 +163,7 @@ private:
     mutable bcos::Mutex x_info;
 
     bool m_actived = false;
+    bool m_clientModel = false;
 
     ///< A call B, the function to call after the response is received by A.
     mutable bcos::RecursiveMutex x_seq2Callback;
@@ -182,11 +185,14 @@ public:
     virtual ~SessionFactory(){};
 
     virtual std::shared_ptr<SessionFace> create_session(std::weak_ptr<Host> _server,
-        std::shared_ptr<SocketFace> const& _socket, MessageFactory::Ptr _messageFactory)
+        std::shared_ptr<SocketFace> const& _socket, bool _client,
+        MessageFactory::Ptr _messageFactory)
     {
         std::shared_ptr<Session> session = std::make_shared<Session>();
         session->setHost(_server);
         session->setSocket(_socket);
+        session->setClientModel(_client);
+
         session->setMessageFactory(_messageFactory);
         return session;
     }

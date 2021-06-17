@@ -204,6 +204,8 @@ void Service::onConnect(
     p2pSession->setP2PInfo(p2pInfo);
     p2pSession->setService(std::weak_ptr<Service>(shared_from_this()));
 
+    // TODO: p2p handshake process
+
     auto p2pSessionWeakPtr = std::weak_ptr<P2PSession>(p2pSession);
     p2pSession->session()->setMessageHandler(std::bind(&Service::onMessage, shared_from_this(),
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, p2pSessionWeakPtr));

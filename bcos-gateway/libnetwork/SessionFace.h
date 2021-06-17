@@ -57,6 +57,7 @@ public:
     using Ptr = std::shared_ptr<SessionFace>;
 
     virtual void start() = 0;
+    virtual bool clientModel() = 0;
     virtual void disconnect(DisconnectReason) = 0;
 
     virtual void asyncSendMessage(

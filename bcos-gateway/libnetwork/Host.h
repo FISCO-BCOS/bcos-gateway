@@ -155,6 +155,7 @@ private:
         std::shared_ptr<std::string> endpointPublicKey, std::shared_ptr<SocketFace> socket);
 
     void startPeerSession(P2PInfo const& p2pInfo, std::shared_ptr<SocketFace> const& socket,
+        bool client,
         std::function<void(NetworkException, P2PInfo const&, std::shared_ptr<SessionFace>)>
             handler);
 
