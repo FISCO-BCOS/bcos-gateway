@@ -79,6 +79,10 @@ enum P2PExceptionType
 
 //
 using P2pID = std::string;
+inline std::string shortId(P2pID const& _p2pNodeId)
+{
+    return _p2pNodeId.substr(0, std::min((size_t)8, _p2pNodeId.size())) + "...";
+}
 using P2pIDs = std::set<std::string>;
 struct Options
 {
