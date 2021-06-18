@@ -215,7 +215,7 @@ P2PInfo Host::p2pInfo()
             {
                 m_p2pInfo.p2pID = boost::to_upper_copy(nodeIDOut);
                 HOST_LOG(INFO) << LOG_DESC("Get node information from cert")
-                               << LOG_KV("p2pid", m_p2pInfo.p2pID);
+                               << LOG_KV("p2pid", shortId(m_p2pInfo.p2pID));
             }
 
             /// fill in the node informations
@@ -285,7 +285,7 @@ void Host::obtainNodeInfo(P2PInfo& info, std::string const& node_info)
     }
 
     HOST_LOG(INFO) << "obtainP2pInfo " << LOG_KV("node_info", node_info)
-                   << LOG_KV("p2pid", info.p2pID);
+                   << LOG_KV("p2pid", shortId(info.p2pID));
 }
 
 /**
@@ -325,7 +325,7 @@ void Host::handshakeServer(const boost::system::error_code& error,
         obtainNodeInfo(info, node_info);
         HOST_LOG(INFO) << LOG_DESC("handshakeServer succ")
                        << LOG_KV("remote endpoint", socket->remoteEndpoint())
-                       << LOG_KV("nodeid", info.p2pID);
+                       << LOG_KV("nodeid", shortId(info.p2pID));
         startPeerSession(info, socket, m_connectionHandler);
     }
 }
@@ -364,7 +364,7 @@ void Host::startPeerSession(P2PInfo const& p2pInfo, std::shared_ptr<SocketFace> 
     });
     HOST_LOG(INFO) << LOG_DESC("startPeerSession, Remote=") << socket->remoteEndpoint()
                    << LOG_KV("local endpoint", socket->localEndpoint())
-                   << LOG_KV("p2pid", p2pInfo.p2pID);
+                   << LOG_KV("p2pid", shortId(p2pInfo.p2pID));
 }
 
 /**

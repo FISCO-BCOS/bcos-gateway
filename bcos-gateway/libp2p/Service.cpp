@@ -171,20 +171,21 @@ void Service::onConnect(
     if (e.errorCode())
     {
         SERVICE_LOG(WARNING) << LOG_DESC("onConnect") << LOG_KV("errorCode", e.errorCode())
-                             << LOG_KV("p2pid", p2pID) << LOG_KV("nodeName", p2pInfo.nodeName)
-                             << LOG_KV("endpoint", peer) << LOG_KV("errorMessage", e.what());
+                             << LOG_KV("p2pid", shortId(p2pID))
+                             << LOG_KV("nodeName", p2pInfo.nodeName) << LOG_KV("endpoint", peer)
+                             << LOG_KV("errorMessage", e.what());
 
         return;
     }
 
-    SERVICE_LOG(INFO) << LOG_DESC("onConnect") << LOG_KV("p2pid", p2pID)
+    SERVICE_LOG(INFO) << LOG_DESC("onConnect") << LOG_KV("p2pid", shortId(p2pID))
                       << LOG_KV("endpoint", peer);
 
     RecursiveGuard l(x_sessions);
     auto it = m_sessions.find(p2pID);
     if (it != m_sessions.end() && it->second->actived())
     {
-        SERVICE_LOG(INFO) << "Disconnect duplicate peer" << LOG_KV("p2pid", p2pID);
+        SERVICE_LOG(INFO) << "Disconnect duplicate peer" << LOG_KV("p2pid", shortId(p2pID));
         updateStaticNodes(session->socket(), p2pID);
         session->disconnect(DuplicatePeer);
         return;
@@ -216,7 +217,7 @@ void Service::onConnect(
     {
         m_sessions.insert(std::make_pair(p2pID, p2pSession));
     }
-    SERVICE_LOG(INFO) << LOG_DESC("Connection established") << LOG_KV("p2pid", p2pID)
+    SERVICE_LOG(INFO) << LOG_DESC("Connection established") << LOG_KV("p2pid", shortId(p2pID))
                       << LOG_KV("endpoint", session->nodeIPEndpoint());
 }
 
@@ -233,7 +234,7 @@ void Service::onDisconnect(NetworkException e, P2PSession::Ptr p2pSession)
     if (it != m_sessions.end() && it->second == p2pSession)
     {
         SERVICE_LOG(TRACE) << "Service onDisconnect and remove from m_sessions"
-                           << LOG_KV("p2pid", p2pSession->p2pID())
+                           << LOG_KV("p2pid", shortId(p2pSession->p2pID()))
                            << LOG_KV("endpoint", p2pSession->session()->nodeIPEndpoint());
 
         m_sessions.erase(it);
@@ -265,7 +266,8 @@ void Service::sendMessageBySession(
     _p2pSession->session()->asyncSendMessage(p2pMessage);
 
     SERVICE_LOG(TRACE) << "sendMessageBySession" << LOG_KV("seq", p2pMessage->seq())
-                       << LOG_KV("packetType", _packetType) << LOG_KV("p2pid", _p2pSession->p2pID())
+                       << LOG_KV("packetType", _packetType)
+                       << LOG_KV("p2pid", shortId(_p2pSession->p2pID()))
                        << LOG_KV("payload.size()", _payload.size());
 }
 
@@ -281,7 +283,7 @@ void Service::sendRespMessageBySession(
     _p2pSession->session()->asyncSendMessage(respMessage);
 
     SERVICE_LOG(TRACE) << "sendRespMessageBySession" << LOG_KV("seq", _p2pMessage->seq())
-                       << LOG_KV("p2pid", _p2pSession->p2pID())
+                       << LOG_KV("p2pid", shortId(_p2pSession->p2pID()))
                        << LOG_KV("payload size", _payload.size());
 }
 
@@ -307,7 +309,8 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session, Message::P
         if (e.errorCode())
         {
             SERVICE_LOG(WARNING) << LOG_DESC("disconnect error P2PSession")
-                                 << LOG_KV("p2pid", p2pID) << LOG_KV("endpoint", nodeIPEndpoint)
+                                 << LOG_KV("p2pid", shortId(p2pID))
+                                 << LOG_KV("endpoint", nodeIPEndpoint)
                                  << LOG_KV("errorCode", e.errorCode())
                                  << LOG_KV("errorMessage", e.what());
 
@@ -337,8 +340,9 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session, Message::P
         auto bytesConstRefPayload = bytesConstRef(payload->data(), payload->size());
         const auto& dstNodeIDs = options->dstNodeIDs();
 
-        SERVICE_LOG(DEBUG) << LOG_DESC("onMessage receive message") << LOG_KV("p2pid", p2pID)
-                           << LOG_KV("endpoint", nodeIPEndpoint) << LOG_KV("seq", p2pMessage->seq())
+        SERVICE_LOG(TRACE) << LOG_DESC("onMessage receive message")
+                           << LOG_KV("p2pid", shortId(p2pID)) << LOG_KV("endpoint", nodeIPEndpoint)
+                           << LOG_KV("seq", p2pMessage->seq())
                            << LOG_KV("version", p2pMessage->version())
                            << LOG_KV("packetType", p2pMessage->packetType());
 

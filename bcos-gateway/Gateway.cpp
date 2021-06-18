@@ -141,7 +141,7 @@ void Gateway::asyncSendMessageByNodeIDWithRetry(
             {
                 GATEWAY_LOG(ERROR)
                     << LOG_DESC("asyncSendMessageByNodeIDWithRetry network error")
-                    << LOG_KV("seq", _p2pMessage->seq()) << LOG_KV("p2pid", p2pID)
+                    << LOG_KV("seq", _p2pMessage->seq()) << LOG_KV("p2pid", shortId(p2pID))
                     << LOG_KV("errorCode", e.errorCode()) << LOG_KV("errorMessage", e.what());
                 if (gatewayPtr)
                 {
@@ -162,18 +162,19 @@ void Gateway::asyncSendMessageByNodeIDWithRetry(
                         << LOG_DESC(
                                "asyncSendMessageByNodeIDWithRetry send message "
                                "successfully")
-                        << LOG_KV("seq", _p2pMessage->seq()) << LOG_KV("p2pid", p2pID);
+                        << LOG_KV("seq", _p2pMessage->seq()) << LOG_KV("p2pid", shortId(p2pID));
 
                     // send this message successfully
                     _errorRespFunc(nullptr);
                 }
                 else
                 {
-                    GATEWAY_LOG(ERROR) << LOG_DESC(
-                                              "asyncSendMessageByNodeIDWithRetry"
-                                              " peer gateway unable dispatch this message")
-                                       << LOG_KV("seq", _p2pMessage->seq())
-                                       << LOG_KV("p2pid", p2pID) << LOG_KV("retCode", retCode);
+                    GATEWAY_LOG(ERROR)
+                        << LOG_DESC(
+                               "asyncSendMessageByNodeIDWithRetry"
+                               " peer gateway unable dispatch this message")
+                        << LOG_KV("seq", _p2pMessage->seq()) << LOG_KV("p2pid", shortId(p2pID))
+                        << LOG_KV("retCode", retCode);
                     if (gatewayPtr)
                     {
                         // send failed and retry to next gateway again
@@ -185,8 +186,8 @@ void Gateway::asyncSendMessageByNodeIDWithRetry(
             catch (const std::exception& e)
             {
                 GATEWAY_LOG(ERROR) << LOG_DESC("asyncSendMessageByNodeIDWithRetry unexpected error")
-                                   << LOG_KV("seq", _p2pMessage->seq()) << LOG_KV("p2pid", p2pID)
-                                   << LOG_KV("error", e.what());
+                                   << LOG_KV("seq", _p2pMessage->seq())
+                                   << LOG_KV("p2pid", shortId(p2pID)) << LOG_KV("error", e.what());
             }
         };
 
