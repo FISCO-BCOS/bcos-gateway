@@ -28,6 +28,7 @@
 #include <bcos-gateway/Gateway.h>
 #include <bcos-gateway/libp2p/P2PInterface.h>
 #include <bcos-gateway/libp2p/P2PSession.h>
+#include <bcos-gateway/libp2p/P2PVersion.h>
 
 #include <map>
 #include <memory>
@@ -126,6 +127,8 @@ public:
         return nullptr;
     }
 
+    void registerP2PSession(P2PInfo const& p2pInfo, P2PSession::Ptr session);
+
 private:
     std::vector<std::function<void(NetworkException, P2PSession::Ptr)>> m_disconnectionHandlers;
 
@@ -142,6 +145,7 @@ private:
     mutable std::mutex x_sessions;
 
     std::shared_ptr<MessageFactory> m_messageFactory;
+    std::shared_ptr<P2PVersion> m_p2pVersion = std::make_shared<P2PVersion>();
 
     P2pID m_nodeID;
 

@@ -23,7 +23,6 @@
 #include <thread>
 
 #include "../common/FrontServiceBuilder.h"
-#include <bcos-framework/interfaces/protocol/CommonError.h>
 
 using namespace std;
 using namespace bcos;
@@ -65,18 +64,7 @@ int main(int argc, const char** argv)
                         << LOG_DESC("echo") << LOG_KV("to", _nodeID->hex())
                         << LOG_KV("content", std::string(_data.begin(), _data.end()));
                     frontService->asyncSendResponse(_id, bcos::protocol::ModuleID::AMOP, _nodeID,
-                        _data, [_id, _nodeID](Error::Ptr _error) {
-                            if (_error &&
-                                _error->errorCode() != bcos::protocol::CommonError::SUCCESS)
-                            {
-                                GATEWAY_MAIN_LOG(ERROR)
-                                    << LOG_DESC("echo send response callback") << LOG_KV("id", _id)
-                                    << LOG_KV("to", _nodeID->hex())
-                                    << LOG_KV("errorCode", _error->errorCode())
-                                    << LOG_KV("errorMessage", _error->errorMessage());
-                                return;
-                            }
-                        });
+                        _data, [_id, _nodeID](Error::Ptr) {});
                 }
             });
 

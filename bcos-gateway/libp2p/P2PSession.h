@@ -25,6 +25,7 @@
 #include <bcos-gateway/libnetwork/SessionFace.h>
 #include <bcos-gateway/libp2p/Common.h>
 #include <bcos-gateway/libp2p/P2PMessage.h>
+#include <bcos-gateway/libp2p/P2PVersion.h>
 #include <memory>
 
 namespace bcos
@@ -50,6 +51,11 @@ public:
     virtual SessionFace::Ptr session() { return m_session; }
     virtual void setSession(std::shared_ptr<SessionFace> session) { m_session = session; }
 
+    virtual ProtocolVersion protocolVersion() const { return m_protocolVersion; }
+    virtual void setProtocolVersion(ProtocolVersion protocolVersion)
+    {
+        m_protocolVersion = protocolVersion;
+    }
     virtual P2pID p2pID() { return m_p2pInfo.p2pID; }
     virtual void setP2PInfo(P2PInfo const& p2pInfo) { m_p2pInfo = p2pInfo; }
     virtual P2PInfo const& p2pInfo() const& { return m_p2pInfo; }
@@ -61,6 +67,8 @@ private:
     SessionFace::Ptr m_session;
     /// gateway p2p info;
     P2PInfo m_p2pInfo;
+    // p2p protocol version, set by p2p handshake
+    ProtocolVersion m_protocolVersion = ProtocolVersion::None;
 
     std::weak_ptr<Service> m_service;
     bool m_run = false;

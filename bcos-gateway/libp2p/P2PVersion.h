@@ -20,6 +20,8 @@
 
 #pragma once
 #include <cstdint>
+#include <memory>
+#include <utility>
 
 namespace bcos
 {
@@ -27,9 +29,21 @@ namespace gateway
 {
 enum ProtocolVersion : uint32_t
 {
+    None = 0,
     v1 = 1,
     minVersion = v1,
     maxVersion = v1,
+};
+class P2PVersion
+{
+public:
+    using Ptr = std::shared_ptr<P2PVersion>;
+
+public:
+    std::string protocolVersionPairJson();
+    std::pair<uint32_t, uint32_t> protocolVersionPair();
+    std::pair<bool, std::pair<uint32_t, uint32_t> > fromProtocolVersionPairJson(
+        const std::string& _json);
 };
 }  // namespace gateway
 }  // namespace bcos

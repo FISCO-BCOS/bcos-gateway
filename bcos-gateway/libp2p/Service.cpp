@@ -251,46 +251,92 @@ void Service::onConnect(
     SERVICE_LOG(INFO) << LOG_DESC("onConnect") << LOG_KV("p2pid", shortId(p2pID))
                       << LOG_KV("endpoint", peer);
 
-    std::lock_guard<std::mutex> l(x_sessions);
-    auto it = m_sessions.find(p2pID);
-    if (it != m_sessions.end() && it->second->actived())
-    {
-        SERVICE_LOG(INFO) << "Disconnect duplicate peer" << LOG_KV("p2pid", shortId(p2pID));
-        updateStaticNodes(session->socket(), p2pID);
-        session->disconnect(DuplicatePeer);
-        return;
-    }
-
     if (p2pID == id())
     {
-        SERVICE_LOG(TRACE) << "Disconnect self";
+        SERVICE_LOG(INFO) << "Disconnect self" << LOG_KV("p2pid", shortId(id()));
         updateStaticNodes(session->socket(), id());
         session->disconnect(DuplicatePeer);
         return;
     }
 
+    // 1. start p2psession first and then start p2psession handshake
     auto p2pSession = std::make_shared<P2PSession>();
     p2pSession->setSession(session);
     p2pSession->setP2PInfo(p2pInfo);
     p2pSession->setService(std::weak_ptr<Service>(shared_from_this()));
 
-    // TODO: p2p handshake process
-
     auto p2pSessionWeakPtr = std::weak_ptr<P2PSession>(p2pSession);
     p2pSession->session()->setMessageHandler(std::bind(&Service::onMessage, shared_from_this(),
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, p2pSessionWeakPtr));
     p2pSession->start();
-    updateStaticNodes(session->socket(), p2pID);
+
+    // 2. p2psession handshake, send handshake message to peer
+    auto p2pMessage = std::static_pointer_cast<P2PMessage>(messageFactory()->buildMessage());
+    std::string versionProtocolPair = m_p2pVersion->protocolVersionPairJson();
+    auto seq = messageFactory()->newSeq();
+    p2pMessage->setSeq(seq);
+    p2pMessage->setPacketType(MessageType::Handshake);
+    p2pMessage->setPayload(
+        std::make_shared<bytes>(versionProtocolPair.begin(), versionProtocolPair.end()));
+
+    auto serviceWeakPtr = std::weak_ptr<Service>(shared_from_this());
+    session->asyncSendMessage(p2pMessage, Options(5000),
+        [p2pInfo, p2pSession, serviceWeakPtr](NetworkException e, Message::Ptr message) {
+            if (e.errorCode() != P2PExceptionType::Success)
+            {
+                SERVICE_LOG(ERROR)
+                    << LOG_DESC("onConnect p2p handshake error")
+                    << LOG_KV("p2pid", shortId(p2pInfo.p2pID)) << LOG_KV("errorCode", e.errorCode())
+                    << LOG_KV("errorMessage", e.what());
+                if (p2pSession)
+                {
+                    p2pSession->stop(UserReason);
+                }
+                return;
+            }
+
+            // TODO:
+            (void)message;
+
+            // auto p2pMessage = std::dynamic_pointer_cast<P2PMessage>(message);
+            SERVICE_LOG(DEBUG) << LOG_DESC("onConnect p2p handshake successfully")
+                               << LOG_KV("p2pid", shortId(p2pInfo.p2pID))
+                               << LOG_KV("endpoint", p2pSession->session()->nodeIPEndpoint());
+
+            auto service = serviceWeakPtr.lock();
+            if (service)
+            {  // 3. add p2pSession
+                service->registerP2PSession(p2pInfo, p2pSession);
+            }
+        });
+}
+
+void Service::registerP2PSession(P2PInfo const& p2pInfo, P2PSession::Ptr session)
+{
+    P2pID p2pID = p2pInfo.p2pID;
+    std::lock_guard<std::mutex> l(x_sessions);
+    auto it = m_sessions.find(p2pID);
+    if (it != m_sessions.end() && it->second->actived())
+    {
+        SERVICE_LOG(INFO) << "Disconnect duplicate peer" << LOG_KV("p2pid", shortId(p2pID));
+        updateStaticNodes(session->session()->socket(), p2pID);
+        session->session()->disconnect(DuplicatePeer);
+        return;
+    }
+
+    updateStaticNodes(session->session()->socket(), p2pID);
     if (it != m_sessions.end())
     {
-        it->second = p2pSession;
+        it->second = session;
     }
     else
     {
-        m_sessions.insert(std::make_pair(p2pID, p2pSession));
+        m_sessions.insert(std::make_pair(p2pID, session));
     }
-    SERVICE_LOG(INFO) << LOG_DESC("Connection established") << LOG_KV("p2pid", shortId(p2pID))
-                      << LOG_KV("endpoint", session->nodeIPEndpoint());
+
+    SERVICE_LOG(INFO) << LOG_DESC("register P2PSession for p2p handshake successfully")
+                      << LOG_KV("p2pid", shortId(p2pID))
+                      << LOG_KV("endpoint", session->session()->nodeIPEndpoint());
 }
 
 void Service::onDisconnect(NetworkException e, P2PSession::Ptr p2pSession)
@@ -423,9 +469,10 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session, Message::P
         {
         case MessageType::Handshake:
         {
-            // TODO: Process handshake packet logic, handshake protocol and determine
-            // the version, when handshake finished the version field of P2PMessage
-            // should be set
+            auto protocolVersionPair = m_p2pVersion->protocolVersionPairJson();
+            sendRespMessageBySession(
+                bytesConstRef((byte*)protocolVersionPair.data(), protocolVersionPair.size()),
+                p2pMessage, p2pSession);
         }
         break;
         case MessageType::Heartbeat:
