@@ -46,7 +46,6 @@ public:
     virtual void start();
     virtual void stop(DisconnectReason reason);
     virtual bool actived() { return m_run; }
-    virtual void heartBeat();
 
     virtual SessionFace::Ptr session() { return m_session; }
     virtual void setSession(std::shared_ptr<SessionFace> session) { m_session = session; }
@@ -64,9 +63,7 @@ private:
     P2PInfo m_p2pInfo;
 
     std::weak_ptr<Service> m_service;
-    std::shared_ptr<boost::asio::deadline_timer> m_timer;
     bool m_run = false;
-    const static uint32_t HEARTBEAT_INTERVEL = 5000;
 };
 
 }  // namespace gateway

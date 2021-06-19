@@ -60,7 +60,7 @@ std::vector<bcos::front::FrontService::Ptr> buildFrontServiceVector()
         frontServiceVector.push_back(frontService);
     }
 
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+    std::this_thread::sleep_for(std::chrono::seconds(10));
 
     return frontServiceVector;
 }
@@ -73,7 +73,8 @@ BOOST_AUTO_TEST_CASE(test_FrontServiceEcho)
     {
         frontService->asyncGetNodeIDs([frontService](Error::Ptr _error,
                                           std::shared_ptr<const crypto::NodeIDs> _nodeIDs) {
-            BOOST_CHECK(_error == nullptr);
+            BOOST_REQUIRE(_error == nullptr);
+            BOOST_REQUIRE(_nodeIDs != nullptr);
             BOOST_CHECK_EQUAL(_nodeIDs->size(), nodeCount - 1);
 
             for (const auto& nodeID : *_nodeIDs)
@@ -93,8 +94,8 @@ BOOST_AUTO_TEST_CASE(test_FrontServiceEcho)
                         p.set_value(true);
                         (void)_respFunc;
                         (void)_nodeID;
-                        BOOST_CHECK(!_id.empty());
-                        BOOST_CHECK(_error == nullptr);
+                        BOOST_REQUIRE(!_id.empty());
+                        BOOST_REQUIRE(_error == nullptr);
                         std::string retStr = std::string(_data.begin(), _data.end());
                         BOOST_CHECK_EQUAL(sendStr, retStr);
                     });
@@ -113,7 +114,8 @@ BOOST_AUTO_TEST_CASE(test_FrontServiceTimeout)
     {
         frontService->asyncGetNodeIDs([frontService](Error::Ptr _error,
                                           std::shared_ptr<const crypto::NodeIDs> _nodeIDs) {
-            BOOST_CHECK(_error == nullptr);
+            BOOST_REQUIRE(_error == nullptr);
+            BOOST_REQUIRE(_nodeIDs != nullptr);
             BOOST_CHECK_EQUAL(_nodeIDs->size(), nodeCount - 1);
 
             for (const auto& nodeID : *_nodeIDs)
@@ -134,8 +136,8 @@ BOOST_AUTO_TEST_CASE(test_FrontServiceTimeout)
                         (void)_respFunc;
                         (void)_nodeID;
                         (void)_data;
-                        BOOST_CHECK(!_id.empty());
-                        BOOST_CHECK(_error != nullptr);
+                        BOOST_REQUIRE(!_id.empty());
+                        BOOST_REQUIRE(_error != nullptr);
                         BOOST_CHECK_EQUAL(
                             _error->errorCode(), bcos::protocol::CommonError::TIMEOUT);
                     });

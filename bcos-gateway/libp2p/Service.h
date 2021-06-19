@@ -49,9 +49,11 @@ public:
 
     using Ptr = std::shared_ptr<Service>;
 
+    uint32_t statusSeq();
     virtual void start() override;
     virtual void stop() override;
     virtual void heartBeat();
+    virtual void reconnect();
 
     virtual bool actived() { return m_run; }
     P2pID id() const override { return m_nodeID; }
@@ -115,7 +117,7 @@ public:
 
     std::shared_ptr<P2PSession> getP2PSessionByNodeId(P2pID const& _nodeID) override
     {
-        RecursiveGuard l(x_sessions);
+        std::lock_guard<std::mutex> l(x_sessions);
         auto it = m_sessions.find(_nodeID);
         if (it != m_sessions.end())
         {
@@ -123,8 +125,6 @@ public:
         }
         return nullptr;
     }
-
-    uint32_t statusSeq();
 
 private:
     std::vector<std::function<void(NetworkException, P2PSession::Ptr)>> m_disconnectionHandlers;
@@ -134,18 +134,19 @@ private:
     std::weak_ptr<Gateway> m_gateway;
 
     std::map<NodeIPEndpoint, P2pID> m_staticNodes;
-    bcos::RecursiveMutex x_nodes;
+    mutable std::mutex x_nodes;
 
     std::shared_ptr<Host> m_host;
 
     std::unordered_map<P2pID, P2PSession::Ptr> m_sessions;
-    mutable bcos::RecursiveMutex x_sessions;
+    mutable std::mutex x_sessions;
 
     std::shared_ptr<MessageFactory> m_messageFactory;
 
     P2pID m_nodeID;
 
-    std::shared_ptr<boost::asio::deadline_timer> m_timer;
+    std::shared_ptr<boost::asio::deadline_timer> m_reconnectTimer;
+    std::shared_ptr<boost::asio::deadline_timer> m_heartbeatTimer;
 
     bool m_run = false;
 };

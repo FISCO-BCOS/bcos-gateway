@@ -34,7 +34,8 @@
 using namespace bcos;
 using namespace bcos::gateway;
 
-static const uint32_t CHECK_INTERVEL = 10000;
+static const uint32_t HEARTBEAT_INTERVEL = 2000;
+static const uint32_t RECONNECT_INTERVEL = 20000;
 
 Service::Service() {}
 
@@ -55,6 +56,7 @@ void Service::start()
         });
         m_host->start();
 
+        reconnect();
         heartBeat();
     }
 }
@@ -64,14 +66,18 @@ void Service::stop()
     if (m_run)
     {
         m_run = false;
-        if (m_timer)
+        if (m_reconnectTimer)
         {
-            m_timer->cancel();
+            m_reconnectTimer->cancel();
+        }
+        if (m_heartbeatTimer)
+        {
+            m_heartbeatTimer->cancel();
         }
         m_host->stop();
 
         /// disconnect sessions
-        RecursiveGuard l(x_sessions);
+        std::lock_guard<std::mutex> l(x_sessions);
         for (auto session : m_sessions)
         {
             session.second->stop(ClientQuit);
@@ -82,7 +88,18 @@ void Service::stop()
     }
 }
 
-void Service::heartBeat()
+uint32_t Service::statusSeq()
+{
+    auto gateway = m_gateway.lock();
+    if (gateway)
+    {
+        return gateway->gatewayNodeManager()->statusSeq();
+    }
+
+    return 0;
+}
+
+void Service::reconnect()
 {
     if (!m_run)
     {
@@ -91,7 +108,7 @@ void Service::heartBeat()
 
     std::map<NodeIPEndpoint, P2pID> staticNodes;
     {
-        RecursiveGuard l(x_nodes);
+        std::lock_guard<std::mutex> l(x_nodes);
         staticNodes = m_staticNodes;
     }
 
@@ -101,31 +118,84 @@ void Service::heartBeat()
         /// exclude myself
         if (it.second == id())
         {
-            SERVICE_LOG(DEBUG) << LOG_DESC("heartBeat ignore myself p2pid same")
+            SERVICE_LOG(DEBUG) << LOG_DESC("reconnect ignore myself p2pid same")
                                << LOG_KV("remote endpoint", it.first)
                                << LOG_KV("nodeid", it.second);
             continue;
         }
         if (!it.second.empty() && isConnected(it.second))
         {
-            SERVICE_LOG(DEBUG) << LOG_DESC("heartBeat ignore connected")
+            SERVICE_LOG(DEBUG) << LOG_DESC("reconnect ignore connected")
                                << LOG_KV("endpoint", it.first) << LOG_KV("nodeid", it.second);
             continue;
         }
-        SERVICE_LOG(DEBUG) << LOG_DESC("heartBeat try to reconnect")
+        SERVICE_LOG(DEBUG) << LOG_DESC("reconnect try to reconnect")
                            << LOG_KV("endpoint", it.first);
         m_host->asyncConnect(
             it.first, std::bind(&Service::onConnect, shared_from_this(), std::placeholders::_1,
                           std::placeholders::_2, std::placeholders::_3));
     }
+
     {
-        RecursiveGuard l(x_sessions);
-        SERVICE_LOG(INFO) << LOG_DESC("heartBeat") << LOG_KV("connected count", m_sessions.size());
+        std::lock_guard<std::mutex> l(x_sessions);
+        SERVICE_LOG(INFO) << LOG_DESC("reconnect") << LOG_KV("connected count", m_sessions.size());
     }
 
     auto self = std::weak_ptr<Service>(shared_from_this());
-    m_timer = m_host->asioInterface()->newTimer(CHECK_INTERVEL);
-    m_timer->async_wait([self](const boost::system::error_code& error) {
+    m_reconnectTimer = m_host->asioInterface()->newTimer(RECONNECT_INTERVEL);
+    m_reconnectTimer->async_wait([self](const boost::system::error_code& error) {
+        if (error)
+        {
+            SERVICE_LOG(TRACE) << "timer canceled" << LOG_KV("errorCode", error);
+            return;
+        }
+        auto service = self.lock();
+        if (service && service->host()->haveNetwork())
+        {
+            service->reconnect();
+        }
+    });
+
+    return;
+}
+
+void Service::heartBeat()
+{
+    if (!m_run)
+    {
+        return;
+    }
+
+    // heartBeat()
+    std::unordered_map<P2pID, P2PSession::Ptr> sessions;
+    {
+        std::lock_guard<std::mutex> l(x_sessions);
+        sessions = m_sessions;
+    }
+
+    for (auto s : sessions)
+    {
+        auto session = s.second;
+        if (session && session->actived())
+        {
+            auto message = std::dynamic_pointer_cast<P2PMessage>(messageFactory()->buildMessage());
+            message->setPacketType(MessageType::Heartbeat);
+            uint32_t seq = boost::asio::detail::socket_ops::host_to_network_long(statusSeq());
+            auto payload = std::make_shared<bytes>((byte*)&seq, (byte*)&seq + 4);
+            message->setPayload(payload);
+
+            SERVICE_LOG(DEBUG) << LOG_DESC("Service heartbeat")
+                               << LOG_KV("endpoint", session->session()->nodeIPEndpoint())
+                               << LOG_KV("seq", statusSeq())
+                               << LOG_KV("p2pid", shortId(session->p2pID()));
+
+            session->session()->asyncSendMessage(message);
+        }
+    }
+
+    auto self = std::weak_ptr<Service>(shared_from_this());
+    m_heartbeatTimer = m_host->asioInterface()->newTimer(HEARTBEAT_INTERVEL);
+    m_heartbeatTimer->async_wait([self](const boost::system::error_code& error) {
         if (error)
         {
             SERVICE_LOG(WARNING) << "timer canceled" << LOG_KV("errorCode", error);
@@ -143,7 +213,7 @@ void Service::heartBeat()
 void Service::updateStaticNodes(std::shared_ptr<SocketFace> const& _s, P2pID const& nodeID)
 {
     NodeIPEndpoint endpoint(_s->nodeIPEndpoint());
-    RecursiveGuard l(x_nodes);
+    std::lock_guard<std::mutex> l(x_nodes);
     auto it = m_staticNodes.find(endpoint);
     // modify m_staticNodes(including accept cases, namely the client endpoint)
     if (it != m_staticNodes.end())
@@ -181,7 +251,7 @@ void Service::onConnect(
     SERVICE_LOG(INFO) << LOG_DESC("onConnect") << LOG_KV("p2pid", shortId(p2pID))
                       << LOG_KV("endpoint", peer);
 
-    RecursiveGuard l(x_sessions);
+    std::lock_guard<std::mutex> l(x_sessions);
     auto it = m_sessions.find(p2pID);
     if (it != m_sessions.end() && it->second->actived())
     {
@@ -231,7 +301,7 @@ void Service::onDisconnect(NetworkException e, P2PSession::Ptr p2pSession)
         handler(e, p2pSession);
     }
 
-    RecursiveGuard l(x_sessions);
+    std::lock_guard<std::mutex> l(x_sessions);
     auto it = m_sessions.find(p2pSession->p2pID());
     if (it != m_sessions.end() && it->second == p2pSession)
     {
@@ -244,7 +314,7 @@ void Service::onDisconnect(NetworkException e, P2PSession::Ptr p2pSession)
             return;
         SERVICE_LOG(WARNING) << LOG_DESC("onDisconnect") << LOG_KV("errorCode", e.errorCode())
                              << LOG_KV("what", boost::diagnostic_information(e));
-        RecursiveGuard l(x_nodes);
+        std::lock_guard<std::mutex> l(x_nodes);
         for (auto& it : m_staticNodes)
         {
             if (it.second == p2pSession->p2pID())
@@ -500,9 +570,8 @@ void Service::asyncSendMessageByNodeID(
             return;
         }
 
-        RecursiveGuard l(x_sessions);
+        std::lock_guard<std::mutex> l(x_sessions);
         auto it = m_sessions.find(nodeID);
-
         if (it != m_sessions.end() && it->second->actived())
         {
             if (message->seq() == 0)
@@ -552,7 +621,7 @@ void Service::asyncBroadcastMessage(P2PMessage::Ptr message, Options options)
     {
         std::unordered_map<P2pID, P2PSession::Ptr> sessions;
         {
-            RecursiveGuard l(x_sessions);
+            std::lock_guard<std::mutex> l(x_sessions);
             sessions = m_sessions;
         }
 
@@ -573,7 +642,7 @@ P2PSessionInfos Service::sessionInfos()
     P2PSessionInfos infos;
     try
     {
-        RecursiveGuard l(x_sessions);
+        std::lock_guard<std::mutex> l(x_sessions);
         auto s = m_sessions;
         for (auto const& i : s)
         {
@@ -591,7 +660,7 @@ P2PSessionInfos Service::sessionInfos()
 
 bool Service::isConnected(P2pID const& nodeID) const
 {
-    RecursiveGuard l(x_sessions);
+    std::lock_guard<std::mutex> l(x_sessions);
     auto it = m_sessions.find(nodeID);
 
     if (it != m_sessions.end() && it->second->actived())
@@ -599,15 +668,4 @@ bool Service::isConnected(P2pID const& nodeID) const
         return true;
     }
     return false;
-}
-
-uint32_t Service::statusSeq()
-{
-    auto gateway = m_gateway.lock();
-    if (gateway)
-    {
-        return gateway->gatewayNodeManager()->statusSeq();
-    }
-
-    return 0;
 }
