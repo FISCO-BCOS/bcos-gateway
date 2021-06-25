@@ -288,8 +288,7 @@ void Gateway::asyncSendMessageByNodeIDs(const std::string& _groupID,
                 GATEWAY_LOG(TRACE)
                     << LOG_DESC("asyncSendMessageByNodeIDs callback") << LOG_KV("groupID", _groupID)
                     << LOG_KV("srcNodeID", _srcNodeID->hex())
-                    << LOG_KV("dstNodeID", dstNodeID->hex())
-                    << LOG_KV("errorCode", _error->errorCode());
+                    << LOG_KV("dstNodeID", dstNodeID->hex()) << LOG_KV("code", _error->errorCode());
             });
     }
 }
@@ -367,8 +366,8 @@ void Gateway::onReceiveP2PMessage(const std::string& _groupID, bcos::crypto::Nod
                                << LOG_KV("groupID", _groupID)
                                << LOG_KV("srcNodeID", _srcNodeID->hex())
                                << LOG_KV("dstNodeID", _dstNodeID->hex())
-                               << LOG_KV("errorCode", (_error ? _error->errorCode() : 0))
-                               << LOG_KV("errorMessage", (_error ? _error->errorMessage() : ""));
+                               << LOG_KV("code", (_error ? _error->errorCode() : 0))
+                               << LOG_KV("msg", (_error ? _error->errorMessage() : ""));
         });
 }
 
@@ -391,8 +390,8 @@ void Gateway::onReceiveBroadcastMessage(
                 GATEWAY_LOG(TRACE)
                     << LOG_DESC("onReceiveBroadcastMessage callback") << LOG_KV("groupID", _groupID)
                     << LOG_KV("srcNodeID", _srcNodeID->hex())
-                    << LOG_KV("errorCode", (_error ? _error->errorCode() : 0))
-                    << LOG_KV("errorMessage", (_error ? _error->errorMessage() : ""));
+                    << LOG_KV("code", (_error ? _error->errorCode() : 0))
+                    << LOG_KV("msg", (_error ? _error->errorMessage() : ""));
             });
     }
 }

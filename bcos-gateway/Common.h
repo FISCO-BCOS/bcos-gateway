@@ -19,8 +19,8 @@
  */
 #pragma once
 
-#define GATEWAY_LOG(LEVEL) LOG(LEVEL) << "[Gateway][Gateway]"
-#define GATEWAY_CONFIG_LOG(LEVEL) LOG(LEVEL) << "[Gateway][Config]"
-#define GATEWAY_FACTORY_LOG(LEVEL) LOG(LEVEL) << "[Gateway][Factory]"
-#define INITIALIZER_LOG(LEVEL) LOG(LEVEL) << "[Gateway][Initializer]"
-#define NODE_MANAGER_LOG(LEVEL) LOG(LEVEL) << "[Gateway][GatewayNodeManager]"
+#define GATEWAY_LOG(LEVEL) BCOS_LOG(LEVEL) << "[Gateway][Gateway]"
+#define GATEWAY_CONFIG_LOG(LEVEL) BCOS_LOG(LEVEL) << "[Gateway][Config]"
+#define GATEWAY_FACTORY_LOG(LEVEL) BCOS_LOG(LEVEL) << "[Gateway][Factory]"
+#define INITIALIZER_LOG(LEVEL) BCOS_LOG(LEVEL) << "[Gateway][Initializer]"
+#define NODE_MANAGER_LOG(LEVEL) BCOS_LOG(LEVEL) << "[Gateway][GatewayNodeManager]"

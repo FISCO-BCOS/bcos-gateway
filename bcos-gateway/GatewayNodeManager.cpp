@@ -248,7 +248,7 @@ void GatewayNodeManager::notifyNodeIDs2FrontService()
                 }
                 NODE_MANAGER_LOG(TRACE)
                     << LOG_DESC("notifyNodeIDs2FrontService onReceiveNodeIDs callback")
-                    << LOG_KV("error", (_error ? _error->errorCode() : 0));
+                    << LOG_KV("code", (_error ? _error->errorCode() : 0));
             });
         }
     }
