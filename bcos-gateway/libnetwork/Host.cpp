@@ -421,8 +421,8 @@ void Host::asyncConnect(NodeIPEndpoint const& _nodeIPEndpoint,
         Guard l(x_pendingConns);
         if (m_pendingConns.count(_nodeIPEndpoint))
         {
-            LOG(TRACE) << LOG_DESC("asyncConnected node is in the pending list")
-                       << LOG_KV("endpoint", _nodeIPEndpoint);
+            BCOS_LOG(TRACE) << LOG_DESC("asyncConnected node is in the pending list")
+                            << LOG_KV("endpoint", _nodeIPEndpoint);
             return;
         }
     }
@@ -447,8 +447,8 @@ void Host::asyncConnect(NodeIPEndpoint const& _nodeIPEndpoint,
         }
         if (socket->isConnected())
         {
-            LOG(WARNING) << LOG_DESC("AsyncConnect timeout erase")
-                         << LOG_KV("endpoint", _nodeIPEndpoint);
+            HOST_LOG(WARNING) << LOG_DESC("AsyncConnect timeout erase")
+                              << LOG_KV("endpoint", _nodeIPEndpoint);
             erasePendingConns(_nodeIPEndpoint);
             socket->close();
         }

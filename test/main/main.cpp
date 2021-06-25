@@ -28,7 +28,7 @@ using namespace std;
 using namespace bcos;
 using namespace gateway;
 
-#define GATEWAY_MAIN_LOG(LEVEL) LOG(LEVEL) << "[Gateway][MAIN]"
+#define GATEWAY_MAIN_LOG(LEVEL) BCOS_LOG(LEVEL) << "[Gateway][MAIN]"
 
 int main(int argc, const char** argv)
 {
@@ -64,7 +64,7 @@ int main(int argc, const char** argv)
                         << LOG_DESC("echo") << LOG_KV("to", _nodeID->hex())
                         << LOG_KV("content", std::string(_data.begin(), _data.end()));
                     frontService->asyncSendResponse(
-                        _id, bcos::protocol::ModuleID::AMOP, _nodeID, _data);
+                        _id, bcos::protocol::ModuleID::AMOP, _nodeID, _data, [](Error::Ptr) {});
                 }
             });
 

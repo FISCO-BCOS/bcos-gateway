@@ -54,7 +54,7 @@ std::vector<bcos::front::FrontService::Ptr> buildFrontServiceVector()
                 if (frontService)
                 {
                     frontService->asyncSendResponse(
-                        _id, bcos::protocol::ModuleID::AMOP, _nodeID, _data);
+                        _id, bcos::protocol::ModuleID::AMOP, _nodeID, _data, [](Error::Ptr) {});
                 }
             });
         frontServiceVector.push_back(frontService);

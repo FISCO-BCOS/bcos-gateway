@@ -128,7 +128,7 @@ void Service::heartBeat()
     m_timer->async_wait([self](const boost::system::error_code& error) {
         if (error)
         {
-            SERVICE_LOG(TRACE) << "timer canceled" << LOG_KV("errorCode", error);
+            SERVICE_LOG(WARNING) << "timer canceled" << LOG_KV("errorCode", error);
             return;
         }
         auto service = self.lock();
@@ -401,9 +401,9 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session, Message::P
                         _error ? _error->errorCode() : (int)protocol::CommonError::SUCCESS);
                     if (_error)
                     {
-                        SERVICE_LOG(DEBUG) << "onReceiveP2PMessage callback"
-                                           << LOG_KV("errorCode", _error->errorCode())
-                                           << LOG_KV("errorMessage", _error->errorMessage());
+                        SERVICE_LOG(DEBUG)
+                            << "onReceiveP2PMessage callback" << LOG_KV("code", _error->errorCode())
+                            << LOG_KV("msg", _error->errorMessage());
                     }
                     servicePtr->sendRespMessageBySession(
                         bytesConstRef((byte*)errorCode.data(), errorCode.size()), p2pMessage,

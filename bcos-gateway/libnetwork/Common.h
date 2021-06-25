@@ -36,9 +36,9 @@
 
 namespace ba = boost::asio;
 namespace bi = boost::asio::ip;
-#define HOST_LOG(LEVEL) LOG(LEVEL) << "[NETWORK][Host]"
-#define SESSION_LOG(LEVEL) LOG(LEVEL) << "[SESSION][Session]"
-#define ASIO_LOG(LEVEL) LOG(LEVEL) << "[ASIO][ASIO]"
+#define HOST_LOG(LEVEL) BCOS_LOG(LEVEL) << "[NETWORK][Host]"
+#define SESSION_LOG(LEVEL) BCOS_LOG(LEVEL) << "[SESSION][Session]"
+#define ASIO_LOG(LEVEL) BCOS_LOG(LEVEL) << "[ASIO][ASIO]"
 
 namespace bcos
 {
