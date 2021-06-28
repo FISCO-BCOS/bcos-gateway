@@ -53,15 +53,6 @@ public:
         const std::string& _groupID, bcos::crypto::NodeIDPtr _srcNodeID, bytesConstRef _payload);
 
     /**
-     * @brief: send message with retry capability
-     * @param _p2pMessage: p2pMessage packet
-     * @param _p2pIDs: destination nodeids
-     * @param _errorRespFunc: error func
-     * @return void
-     */
-    void asyncSendMessageByNodeIDWithRetry(std::shared_ptr<P2PMessage> _p2pMessage,
-        std::set<P2pID> _p2pIDs, ErrorRespFunc _errorRespFunc);
-    /**
      * @brief: register FrontService
      * @param _groupID: groupID
      * @param _nodeID: nodeID
