@@ -146,7 +146,7 @@ void Gateway::asyncSendMessageByNodeID(const std::string& _groupID,
                            << LOG_KV("groupID", _groupID) << LOG_KV("srcNodeID", _srcNodeID->hex())
                            << LOG_KV("dstNodeID", _dstNodeID->hex());
 
-        auto errorPtr = std::make_shared<Error>(CommonError::TIMEOUT,
+        auto errorPtr = std::make_shared<Error>(CommonError::NotFoundFrontServiceSendMsg,
             "could not find a gateway to "
             "send this message, groupID:" +
                 _groupID + " ,dstNodeID:" + _dstNodeID->hex());
@@ -188,11 +188,10 @@ void Gateway::asyncSendMessageByNodeID(const std::string& _groupID,
                     << LOG_KV("dstNodeID", m_dstNodeID->hex())
                     << LOG_KV("seq", std::to_string(m_p2pMessage->seq()));
 
-                // TODO: define error
                 if (m_respFunc)
                 {
-                    auto errorPtr =
-                        std::make_shared<Error>(CommonError::TIMEOUT, "unable to send the message");
+                    auto errorPtr = std::make_shared<Error>(
+                        CommonError::GatewaySendMsgFailed, "unable to send the message");
                     m_respFunc(errorPtr);
                 }
                 return;
@@ -350,7 +349,7 @@ void Gateway::onReceiveP2PMessage(const std::string& _groupID, bcos::crypto::Nod
                            << LOG_KV("groupID", _groupID) << LOG_KV("srcNodeID", _srcNodeID->hex())
                            << LOG_KV("dstNodeID", _dstNodeID->hex());
 
-        auto errorPtr = std::make_shared<Error>(CommonError::TIMEOUT,
+        auto errorPtr = std::make_shared<Error>(CommonError::NotFoundFrontServiceDispatchMsg,
             "unable to find front service dispath message to "
             "groupID:" +
                 _groupID + " ,nodeID:" + _dstNodeID->hex());
