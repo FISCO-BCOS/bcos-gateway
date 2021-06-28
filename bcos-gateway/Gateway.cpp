@@ -202,6 +202,7 @@ void Gateway::asyncSendMessageByNodeID(const std::string& _groupID,
             auto self = shared_from_this();
             auto callback = [self, p2pID](NetworkException e, std::shared_ptr<P2PSession> session,
                                 std::shared_ptr<P2PMessage> message) {
+                (void)session;
                 // network error
                 if (e.errorCode() != P2PExceptionType::Success)
                 {

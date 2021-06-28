@@ -129,8 +129,7 @@ void Service::reconnect()
                                << LOG_KV("endpoint", it.first) << LOG_KV("nodeid", it.second);
             continue;
         }
-        SERVICE_LOG(DEBUG) << LOG_DESC("reconnect try to reconnect")
-                           << LOG_KV("endpoint", it.first);
+        SERVICE_LOG(DEBUG) << LOG_DESC("try to reconnect") << LOG_KV("endpoint", it.first);
         m_host->asyncConnect(
             it.first, std::bind(&Service::onConnect, shared_from_this(), std::placeholders::_1,
                           std::placeholders::_2, std::placeholders::_3));
@@ -138,7 +137,7 @@ void Service::reconnect()
 
     {
         std::lock_guard<std::mutex> l(x_sessions);
-        SERVICE_LOG(INFO) << LOG_DESC("reconnect") << LOG_KV("connected count", m_sessions.size());
+        SERVICE_LOG(INFO) << LOG_DESC("heartbeat") << LOG_KV("connected count", m_sessions.size());
     }
 
     auto self = std::weak_ptr<Service>(shared_from_this());
@@ -233,23 +232,24 @@ void Service::onConnect(
     NetworkException e, P2PInfo const& p2pInfo, std::shared_ptr<SessionFace> session)
 {
     P2pID p2pID = p2pInfo.p2pID;
-    std::string peer = "unknown";
+    NodeIPEndpoint nodeIPEndpoint;
     if (session)
     {
-        peer = session->nodeIPEndpoint().address();
+        nodeIPEndpoint = session->nodeIPEndpoint();
     }
     if (e.errorCode())
     {
         SERVICE_LOG(WARNING) << LOG_DESC("onConnect") << LOG_KV("errorCode", e.errorCode())
                              << LOG_KV("p2pid", shortId(p2pID))
-                             << LOG_KV("nodeName", p2pInfo.nodeName) << LOG_KV("endpoint", peer)
+                             << LOG_KV("nodeName", p2pInfo.nodeName)
+                             << LOG_KV("endpoint", nodeIPEndpoint)
                              << LOG_KV("errorMessage", e.what());
 
         return;
     }
 
     SERVICE_LOG(INFO) << LOG_DESC("onConnect") << LOG_KV("p2pid", shortId(p2pID))
-                      << LOG_KV("endpoint", peer);
+                      << LOG_KV("endpoint", nodeIPEndpoint);
 
     if (p2pID == id())
     {
@@ -259,7 +259,16 @@ void Service::onConnect(
         return;
     }
 
-    // 1. start p2psession first and then start p2psession handshake
+    // create p2psession and start p2psession
+    auto p2pSession = startP2PSession(p2pInfo, session);
+    // start p2p handshake
+    startHandshake(p2pInfo, p2pSession);
+}
+
+std::shared_ptr<P2PSession> Service::startP2PSession(
+    P2PInfo const& p2pInfo, std::shared_ptr<SessionFace> session)
+{
+    //  start p2psession and start p2psession
     auto p2pSession = std::make_shared<P2PSession>();
     p2pSession->setSession(session);
     p2pSession->setP2PInfo(p2pInfo);
@@ -270,22 +279,30 @@ void Service::onConnect(
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, p2pSessionWeakPtr));
     p2pSession->start();
 
-    // 2. p2psession handshake, send handshake message to peer
+    SERVICE_LOG(INFO) << LOG_DESC("startP2PSession") << LOG_KV("p2pid", shortId(p2pInfo.p2pID));
+    return p2pSession;
+}
+
+void Service::startHandshake(P2PInfo const& p2pInfo, std::shared_ptr<P2PSession> p2pSession)
+{
+    // send handshake message to peer
     auto p2pMessage = std::static_pointer_cast<P2PMessage>(messageFactory()->buildMessage());
-    std::string versionProtocolPair = m_p2pVersion->protocolVersionPairJson();
+    std::string json = m_p2pVersion->protocolVersionPairJson();
     auto seq = messageFactory()->newSeq();
     p2pMessage->setSeq(seq);
     p2pMessage->setPacketType(MessageType::Handshake);
-    p2pMessage->setPayload(
-        std::make_shared<bytes>(versionProtocolPair.begin(), versionProtocolPair.end()));
+    p2pMessage->setPayload(std::make_shared<bytes>(json.begin(), json.end()));
 
-    auto serviceWeakPtr = std::weak_ptr<Service>(shared_from_this());
-    session->asyncSendMessage(p2pMessage, Options(5000),
-        [p2pInfo, p2pSession, serviceWeakPtr](NetworkException e, Message::Ptr message) {
+    SERVICE_LOG(INFO) << LOG_DESC("startHandshake") << LOG_KV("p2pid", shortId(p2pInfo.p2pID))
+                      << LOG_KV("version", json);
+
+    auto self = std::weak_ptr<Service>(shared_from_this());
+    p2pSession->session()->asyncSendMessage(p2pMessage, Options(5000),
+        [p2pInfo, p2pSession, self](NetworkException e, Message::Ptr message) {
             if (e.errorCode() != P2PExceptionType::Success)
             {
                 SERVICE_LOG(ERROR)
-                    << LOG_DESC("onConnect p2p handshake error")
+                    << LOG_DESC("startHandshake p2p handshake callback error")
                     << LOG_KV("p2pid", shortId(p2pInfo.p2pID)) << LOG_KV("errorCode", e.errorCode())
                     << LOG_KV("errorMessage", e.what());
                 if (p2pSession)
@@ -295,17 +312,18 @@ void Service::onConnect(
                 return;
             }
 
+            // std::string versionJson = std::string(message->data()->begin(),
+            // message->data()->end());
             // TODO:
             (void)message;
 
-            // auto p2pMessage = std::dynamic_pointer_cast<P2PMessage>(message);
-            SERVICE_LOG(DEBUG) << LOG_DESC("onConnect p2p handshake successfully")
+            SERVICE_LOG(DEBUG) << LOG_DESC("p2p handshake successfully")
                                << LOG_KV("p2pid", shortId(p2pInfo.p2pID))
                                << LOG_KV("endpoint", p2pSession->session()->nodeIPEndpoint());
 
-            auto service = serviceWeakPtr.lock();
+            auto service = self.lock();
             if (service)
-            {  // 3. add p2pSession
+            {  // register p2pSession
                 service->registerP2PSession(p2pInfo, p2pSession);
             }
         });
@@ -334,7 +352,7 @@ void Service::registerP2PSession(P2PInfo const& p2pInfo, P2PSession::Ptr session
         m_sessions.insert(std::make_pair(p2pID, session));
     }
 
-    SERVICE_LOG(INFO) << LOG_DESC("register P2PSession for p2p handshake successfully")
+    SERVICE_LOG(INFO) << LOG_DESC("register session p2p handshake successfully")
                       << LOG_KV("p2pid", shortId(p2pID))
                       << LOG_KV("endpoint", session->session()->nodeIPEndpoint());
 }
@@ -507,6 +525,7 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session, Message::P
         case MessageType::PeerToPeerMessage:
         {
             bcos::crypto::NodeIDPtr srcNodeIDPtr = m_keyFactory->createKey(*srcNodeID.get());
+            // TODO: fix [0] proble
             bcos::crypto::NodeIDPtr dstNodeIDPtr = m_keyFactory->createKey(*dstNodeIDs[0].get());
             gateway->onReceiveP2PMessage(groupID, srcNodeIDPtr, dstNodeIDPtr, bytesConstRefPayload,
                 [message, p2pSession, p2pMessage, serviceWeakPtr](Error::Ptr _error) {

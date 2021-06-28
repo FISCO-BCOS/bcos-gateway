@@ -60,11 +60,15 @@ public:
     P2pID id() const override { return m_nodeID; }
     void setId(const P2pID& _nodeID) { m_nodeID = _nodeID; }
 
+
     virtual void onConnect(
         NetworkException e, P2PInfo const& p2pInfo, std::shared_ptr<SessionFace> session);
     virtual void onDisconnect(NetworkException e, P2PSession::Ptr p2pSession);
     virtual void onMessage(NetworkException e, SessionFace::Ptr session, Message::Ptr message,
         std::weak_ptr<P2PSession> p2pSessionWeakPtr);
+    virtual std::shared_ptr<P2PSession> startP2PSession(
+        P2PInfo const& p2pInfo, std::shared_ptr<SessionFace> session);
+    virtual void startHandshake(P2PInfo const& p2pInfo, std::shared_ptr<P2PSession> p2pSession);
 
     std::shared_ptr<P2PMessage> sendMessageByNodeID(
         P2pID nodeID, std::shared_ptr<P2PMessage> message) override;
