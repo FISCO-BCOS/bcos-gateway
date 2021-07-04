@@ -70,15 +70,12 @@ public:
         P2PInfo const& p2pInfo, std::shared_ptr<SessionFace> session);
     virtual void startHandshake(P2PInfo const& p2pInfo, std::shared_ptr<P2PSession> p2pSession);
 
-    std::shared_ptr<P2PMessage> sendMessageByNodeID(
-        P2pID nodeID, std::shared_ptr<P2PMessage> message) override;
-    void sendMessageBySession(int _packetType, bytesConstRef _payload, P2PSession::Ptr _p2pSession);
-    void sendRespMessageBySession(
-        bytesConstRef _payload, P2PMessage::Ptr _p2pMessage, P2PSession::Ptr _p2pSession);
-    void asyncSendMessageByNodeID(P2pID nodeID, std::shared_ptr<P2PMessage> message,
-        CallbackFuncWithSession callback, Options options = Options()) override;
+    virtual void asyncSendMessageByNodeID(P2pID nodeID, uint32_t packetType,
+        std::shared_ptr<bytes> message, CallbackFuncWithSession callback,
+        Options options = Options()) override;
 
-    void asyncBroadcastMessage(std::shared_ptr<P2PMessage> message, Options options) override;
+    virtual void asyncBroadcastMessage(
+        uint32_t packetType, std::shared_ptr<bytes> message, Options options) override;
 
     virtual std::map<NodeIPEndpoint, P2pID> staticNodes() { return m_staticNodes; }
     virtual void setStaticNodes(const std::set<NodeIPEndpoint>& staticNodes)

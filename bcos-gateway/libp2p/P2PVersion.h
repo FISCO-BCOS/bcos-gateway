@@ -27,7 +27,7 @@ namespace bcos
 {
 namespace gateway
 {
-enum ProtocolVersion : uint32_t
+enum ProtocolVersion : uint16_t
 {
     None = 0,
     v1 = 1,
@@ -41,8 +41,8 @@ public:
 
 public:
     std::string protocolVersionPairJson();
-    std::pair<uint32_t, uint32_t> protocolVersionPair();
-    std::pair<bool, std::pair<uint32_t, uint32_t> > fromProtocolVersionPairJson(
+    std::pair<uint16_t, uint16_t> protocolVersionPair();
+    std::pair<bool, std::pair<uint16_t, uint16_t> > fromProtocolVersionPairJson(
         const std::string& _json);
 };
 }  // namespace gateway

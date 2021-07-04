@@ -39,10 +39,17 @@ public:
 
     virtual uint32_t length() const = 0;
     virtual uint32_t seq() const = 0;
+    virtual void setSeq(uint32_t seq) = 0;
     virtual uint16_t version() const = 0;
+    virtual void setVersion(uint16_t version) = 0;
     virtual uint16_t packetType() const = 0;
+    virtual void setPacketType(uint16_t packetType) = 0;
     virtual uint16_t ext() const = 0;
+    virtual void setExt(uint16_t ext) = 0;
     virtual bool isRespPacket() const = 0;
+    virtual void setRespPacket() = 0;
+    virtual std::shared_ptr<bytes> payload() const;
+    virtual void setPayload(std::shared_ptr<bytes> _payload);
     virtual bool encode(bcos::bytes& _buffer) = 0;
     virtual ssize_t decode(bytesConstRef _buffer) = 0;
 };
@@ -55,6 +62,7 @@ public:
 public:
     virtual ~MessageFactory() {}
     virtual Message::Ptr buildMessage() = 0;
+    virtual Message::Ptr buildMessage(uint32_t version) = 0;
 
     virtual uint32_t newSeq()
     {

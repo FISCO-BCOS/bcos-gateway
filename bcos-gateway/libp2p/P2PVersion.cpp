@@ -25,9 +25,9 @@
 using namespace bcos;
 using namespace bcos::gateway;
 
-std::pair<uint32_t, uint32_t> P2PVersion::protocolVersionPair()
+std::pair<uint16_t, uint16_t> P2PVersion::protocolVersionPair()
 {
-    return std::make_pair<uint32_t, uint32_t>(
+    return std::make_pair<uint16_t, uint16_t>(
         ProtocolVersion::minVersion, ProtocolVersion::maxVersion);
 }
 
@@ -40,7 +40,7 @@ std::string P2PVersion::protocolVersionPairJson()
     return jsonValue;
 }
 
-std::pair<bool, std::pair<uint32_t, uint32_t>> P2PVersion::fromProtocolVersionPairJson(
+std::pair<bool, std::pair<uint16_t, uint16_t>> P2PVersion::fromProtocolVersionPairJson(
     const std::string& _json)
 {
     try
@@ -54,8 +54,8 @@ std::pair<bool, std::pair<uint32_t, uint32_t>> P2PVersion::fromProtocolVersionPa
             P2PVERSION_LOG(INFO) << LOG_DESC("fromProtocolVersionPairJson")
                                  << LOG_KV("minVersion", minVersion)
                                  << LOG_KV("maxVersion", maxVersion);
-            return std::pair<bool, std::pair<uint32_t, uint32_t>>(
-                true, std::pair<uint32_t, uint32_t>(minVersion, maxVersion));
+            return std::pair<bool, std::pair<uint16_t, uint16_t>>(
+                true, std::pair<uint16_t, uint16_t>(minVersion, maxVersion));
         }
 
         P2PVERSION_LOG(ERROR) << LOG_DESC("unable parse json") << LOG_KV("json", _json);
@@ -65,5 +65,5 @@ std::pair<bool, std::pair<uint32_t, uint32_t>> P2PVersion::fromProtocolVersionPa
         P2PVERSION_LOG(ERROR) << LOG_DESC("cannot parse json") << LOG_KV("json", _json);
     }
 
-    return std::pair<bool, std::pair<uint32_t, uint32_t>>(false, std::pair<uint32_t, uint32_t>());
+    return std::pair<bool, std::pair<uint16_t, uint16_t>>(false, std::pair<uint32_t, uint32_t>());
 }

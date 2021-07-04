@@ -51,6 +51,12 @@ public:
     virtual SessionFace::Ptr session() { return m_session; }
     virtual void setSession(std::shared_ptr<SessionFace> session) { m_session = session; }
 
+    virtual P2PMessageFactory::Ptr messageFactory() { return m_messageFactory; }
+    virtual void setMessageFactory(P2PMessageFactory::Ptr messageFactory)
+    {
+        m_messageFactory = messageFactory;
+    }
+
     virtual ProtocolVersion protocolVersion() const { return m_protocolVersion; }
     virtual void setProtocolVersion(ProtocolVersion protocolVersion)
     {
@@ -63,12 +69,19 @@ public:
     virtual std::weak_ptr<Service> service() { return m_service; }
     virtual void setService(std::weak_ptr<Service> service) { m_service = service; }
 
+public:
+    virtual void asyncSendMessage(uint32_t packetType, std::shared_ptr<bytes> payload,
+        Options options, SessionCallbackFunc callback);
+    virtual void asyncSendResponse(std::shared_ptr<bytes> payload, P2PMessage::Ptr _p2pMessage);
+
 private:
     SessionFace::Ptr m_session;
     /// gateway p2p info;
     P2PInfo m_p2pInfo;
     // p2p protocol version, set by p2p handshake
     ProtocolVersion m_protocolVersion = ProtocolVersion::None;
+    //
+    P2PMessageFactory::Ptr m_messageFactory;
 
     std::weak_ptr<Service> m_service;
     bool m_run = false;

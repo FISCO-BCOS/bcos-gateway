@@ -23,6 +23,7 @@
 #include <bcos-framework/interfaces/front/FrontServiceInterface.h>
 #include <bcos-framework/interfaces/gateway/GatewayInterface.h>
 #include <bcos-gateway/Common.h>
+#include <bcos-gateway/GatewayMessage.h>
 #include <bcos-gateway/GatewayNodeManager.h>
 #include <bcos-gateway/libp2p/Service.h>
 
@@ -46,10 +47,10 @@ public:
     /**
      * @brief: construct Message object
      */
-    std::shared_ptr<P2PMessage> newP2PMessage(const std::string& _groupID,
+    std::shared_ptr<bcos::bytes> newGatewayMessageAndEncode(const std::string& _groupID,
         bcos::crypto::NodeIDPtr _srcNodeID, bcos::crypto::NodeIDPtr _dstNodeID,
         bytesConstRef _payload);
-    std::shared_ptr<P2PMessage> newP2PMessage(
+    std::shared_ptr<bcos::bytes> newGatewayMessageAndEncode(
         const std::string& _groupID, bcos::crypto::NodeIDPtr _srcNodeID, bytesConstRef _payload);
 
     /**
@@ -106,6 +107,14 @@ public:
         bcos::crypto::NodeIDPtr _srcNodeID, bytesConstRef _payload) override;
 
     /**
+     * @brief: receive message from p2p module
+     * @param _payload: payload
+     * @param _errorRespFunc: error func
+     */
+    virtual void onReceiveMessage(
+        bytesConstRef _payload, ErrorRespFunc _errorRespFunc = ErrorRespFunc());
+
+    /**
      * @brief: receive p2p message
      * @param _groupID: groupID
      * @param _srcNodeID: the sender nodeID
@@ -143,6 +152,8 @@ private:
     P2PInterface::Ptr m_p2pInterface;
     // GatewayNodeManager
     GatewayNodeManager::Ptr m_gatewayNodeManager;
+    // GatewayMessageFactory
+    GatewayMessageFactory::Ptr m_gatewayMessageFactory;
 };
 
 }  // namespace gateway

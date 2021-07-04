@@ -23,6 +23,7 @@
 #include <bcos-framework/libutilities/Common.h>
 #include <bcos-gateway/libnetwork/Common.h>
 #include <bcos-gateway/libnetwork/Message.h>
+#include <bcos-gateway/libp2p/P2PVersion.h>
 
 namespace bcos
 {
@@ -35,11 +36,10 @@ enum MessageType
     Handshake = 0x2,
     RequestNodeIDs = 0x3,
     ResponseNodeIDs = 0x4,
-    PeerToPeerMessage = 0x5,
-    BroadcastMessage = 0x6
+    GatewayMessage = 0x5
 };
 
-enum MessageExtFieldFlag
+enum MessageExt
 {
     Response = 0x0001,
 };
@@ -50,54 +50,6 @@ enum MessageDecodeStatus
     MESSAGE_INCOMPLETE = 0,
 };
 
-/// Options format definition
-///   options(default version):
-///       groupID length    :1 bytes
-///       groupID           : bytes
-///       nodeID length     :2 bytes
-///       src nodeID        : bytes
-///       src nodeID count  :1 bytes
-///       dst nodeIDs       : bytes
-class P2PMessageOptions
-{
-public:
-    using Ptr = std::shared_ptr<P2PMessageOptions>;
-    /// groupID length(1) + nodeID length(2) + dst nodeID count(1)
-    const static size_t OPTIONS_MIN_LENGTH = 5;
-
-public:
-    P2PMessageOptions() { m_srcNodeID = std::make_shared<bytes>(); }
-
-    virtual ~P2PMessageOptions() {}
-
-    /// The maximum gateway transport protocol supported groupID length  65535
-    const static size_t MAX_GROUPID_LENGTH = 65535;
-    /// The maximum gateway transport protocol supported nodeID length  65535
-    const static size_t MAX_NODEID_LENGTH = 65535;
-    /// The maximum gateway transport protocol supported dst nodeID count  127
-    const static size_t MAX_DST_NODEID_COUNT = 255;
-
-    bool encode(bytes& _buffer);
-    ssize_t decode(bytesConstRef _buffer);
-
-public:
-    std::string groupID() const { return m_groupID; }
-    void setGroupID(const std::string& _groupID) { m_groupID = _groupID; }
-
-    std::shared_ptr<bytes> srcNodeID() const { return m_srcNodeID; }
-    void setSrcNodeID(std::shared_ptr<bytes> _srcNodeID) { m_srcNodeID = _srcNodeID; }
-
-    std::vector<std::shared_ptr<bytes>>& dstNodeIDs() { return m_dstNodeIDs; }
-    void setDstNodeIDs(const std::vector<std::shared_ptr<bytes>>& _dstNodeIDs)
-    {
-        m_dstNodeIDs = _dstNodeIDs;
-    }
-
-protected:
-    std::string m_groupID;
-    std::shared_ptr<bytes> m_srcNodeID;
-    std::vector<std::shared_ptr<bytes>> m_dstNodeIDs;
-};
 
 /// Message format definition of gateway P2P network
 ///
@@ -107,13 +59,6 @@ protected:
 ///   packet type       :2 bytes
 ///   seq               :4 bytes
 ///   ext               :2 bytes
-///   options(default version):
-///       groupID length    :1 bytes
-///       groupID           : bytes
-///       nodeID length     :2 bytes
-///       src nodeID        : bytes
-///       src nodeID count  :1 bytes
-///       dst nodeIDs       : bytes
 ///   payload           :X bytes
 class P2PMessage : public Message
 {
@@ -124,51 +69,36 @@ public:
     const static size_t MESSAGE_HEADER_LENGTH = 14;
 
 public:
-    P2PMessage()
-    {
-        m_payload = std::make_shared<bytes>();
-        m_options = std::make_shared<P2PMessageOptions>();
-    }
+    P2PMessage() { m_payload = std::make_shared<bytes>(); }
 
     virtual ~P2PMessage() {}
 
 public:
     virtual uint32_t length() const override { return m_length; }
-    virtual void setLength(uint32_t length) { m_length = length; }
+    // virtual void setLength(uint32_t length) override { m_length = length; }
 
     virtual uint16_t version() const override { return m_version; }
-    virtual void setVersion(uint16_t version) { m_version = version; }
+    virtual void setVersion(uint16_t version) override { m_version = version; }
 
     virtual uint16_t packetType() const override { return m_packetType; }
-    virtual void setPacketType(uint16_t packetType) { m_packetType = packetType; }
+    virtual void setPacketType(uint16_t packetType) override { m_packetType = packetType; }
 
     virtual uint32_t seq() const override { return m_seq; }
-    virtual void setSeq(uint32_t seq) { m_seq = seq; }
+    virtual void setSeq(uint32_t seq) override { m_seq = seq; }
 
     virtual uint16_t ext() const override { return m_ext; }
-    virtual void setExt(uint16_t _ext) { m_ext = _ext; }
+    virtual void setExt(uint16_t _ext) override { m_ext = _ext; }
 
-    P2PMessageOptions::Ptr options() const { return m_options; }
-    void setOptions(P2PMessageOptions::Ptr _options) { m_options = _options; }
+    std::shared_ptr<bytes> payload() const override { return m_payload; }
+    void setPayload(std::shared_ptr<bytes> _payload) override { m_payload = _payload; }
 
-    std::shared_ptr<bytes> payload() const { return m_payload; }
-    void setPayload(std::shared_ptr<bytes> _payload) { m_payload = _payload; }
+    virtual bool isRespPacket() const override { return (m_ext & MessageExt::Response) != 0; }
+    virtual void setRespPacket() override { m_ext |= MessageExt::Response; }
 
 public:
-    ssize_t decodeHeader(bytesConstRef _buffer);
-    void setRespPacket() { m_ext |= MessageExtFieldFlag::Response; }
-    bool hasOptions() const
-    {
-        return (m_packetType == MessageType::PeerToPeerMessage) ||
-               (m_packetType == MessageType::BroadcastMessage);
-    }
-
     virtual bool encode(bytes& _buffer) override;
     virtual ssize_t decode(bytesConstRef _buffer) override;
-    virtual bool isRespPacket() const override
-    {
-        return (m_ext & MessageExtFieldFlag::Response) != 0;
-    }
+
 
 protected:
     uint32_t m_length = 0;
@@ -176,8 +106,6 @@ protected:
     uint16_t m_packetType = 0;
     uint32_t m_seq = 0;
     uint16_t m_ext = 0;
-
-    P2PMessageOptions::Ptr m_options;  ///< options fields
 
     std::shared_ptr<bytes> m_payload;  ///< payload data
 };
@@ -189,8 +117,11 @@ public:
     virtual ~P2PMessageFactory() {}
 
 public:
-    virtual Message::Ptr buildMessage()
+    virtual Message::Ptr buildMessage() { return buildMessage(ProtocolVersion::v1); }
+    virtual Message::Ptr buildMessage(uint32_t version)
     {
+        (void)version;
+        // TODO: Adapt multiple version formats
         auto message = std::make_shared<P2PMessage>();
         return message;
     }

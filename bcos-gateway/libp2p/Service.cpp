@@ -177,18 +177,15 @@ void Service::heartBeat()
         auto session = s.second;
         if (session && session->actived())
         {
-            auto message = std::dynamic_pointer_cast<P2PMessage>(messageFactory()->buildMessage());
-            message->setPacketType(MessageType::Heartbeat);
             uint32_t seq = boost::asio::detail::socket_ops::host_to_network_long(statusSeq());
             auto payload = std::make_shared<bytes>((byte*)&seq, (byte*)&seq + 4);
-            message->setPayload(payload);
 
             SERVICE_LOG(DEBUG) << LOG_DESC("Service heartbeat")
                                << LOG_KV("endpoint", session->session()->nodeIPEndpoint())
                                << LOG_KV("seq", statusSeq())
                                << LOG_KV("p2pid", shortId(session->p2pID()));
 
-            session->session()->asyncSendMessage(message);
+            session->asyncSendMessage(MessageType::Heartbeat, payload, Options(), nullptr);
         }
     }
 
@@ -286,18 +283,14 @@ std::shared_ptr<P2PSession> Service::startP2PSession(
 void Service::startHandshake(P2PInfo const& p2pInfo, std::shared_ptr<P2PSession> p2pSession)
 {
     // send handshake message to peer
-    auto p2pMessage = std::static_pointer_cast<P2PMessage>(messageFactory()->buildMessage());
     std::string json = m_p2pVersion->protocolVersionPairJson();
-    auto seq = messageFactory()->newSeq();
-    p2pMessage->setSeq(seq);
-    p2pMessage->setPacketType(MessageType::Handshake);
-    p2pMessage->setPayload(std::make_shared<bytes>(json.begin(), json.end()));
+    auto buffer = std::make_shared<bytes>(json.begin(), json.end());
 
     SERVICE_LOG(INFO) << LOG_DESC("startHandshake") << LOG_KV("p2pid", shortId(p2pInfo.p2pID))
                       << LOG_KV("version", json);
 
     auto self = std::weak_ptr<Service>(shared_from_this());
-    p2pSession->session()->asyncSendMessage(p2pMessage, Options(5000),
+    p2pSession->asyncSendMessage(MessageType::Handshake, buffer, Options(5000),
         [p2pInfo, p2pSession, self](NetworkException e, Message::Ptr message) {
             if (e.errorCode() != P2PExceptionType::Success)
             {
@@ -390,39 +383,6 @@ void Service::onDisconnect(NetworkException e, P2PSession::Ptr p2pSession)
     }
 }
 
-void Service::sendMessageBySession(
-    int _packetType, bytesConstRef _payload, P2PSession::Ptr _p2pSession)
-{
-    auto p2pMessage = std::static_pointer_cast<P2PMessage>(messageFactory()->buildMessage());
-    auto seq = messageFactory()->newSeq();
-    p2pMessage->setSeq(seq);
-    p2pMessage->setPacketType(_packetType);
-    p2pMessage->setPayload(std::make_shared<bytes>(_payload.begin(), _payload.end()));
-
-    _p2pSession->session()->asyncSendMessage(p2pMessage);
-
-    SERVICE_LOG(TRACE) << "sendMessageBySession" << LOG_KV("seq", p2pMessage->seq())
-                       << LOG_KV("packetType", _packetType)
-                       << LOG_KV("p2pid", shortId(_p2pSession->p2pID()))
-                       << LOG_KV("payload.size()", _payload.size());
-}
-
-void Service::sendRespMessageBySession(
-    bytesConstRef _payload, P2PMessage::Ptr _p2pMessage, P2PSession::Ptr _p2pSession)
-{
-    auto respMessage = std::static_pointer_cast<P2PMessage>(messageFactory()->buildMessage());
-
-    respMessage->setSeq(_p2pMessage->seq());
-    respMessage->setRespPacket();
-    respMessage->setPayload(std::make_shared<bytes>(_payload.begin(), _payload.end()));
-
-    _p2pSession->session()->asyncSendMessage(respMessage);
-
-    SERVICE_LOG(TRACE) << "sendRespMessageBySession" << LOG_KV("seq", _p2pMessage->seq())
-                       << LOG_KV("p2pid", shortId(_p2pSession->p2pID()))
-                       << LOG_KV("payload size", _payload.size());
-}
-
 void Service::onMessage(NetworkException e, SessionFace::Ptr session, Message::Ptr message,
     std::weak_ptr<P2PSession> p2pSessionWeakPtr)
 {
@@ -469,39 +429,34 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session, Message::P
 
         /// SERVICE_LOG(TRACE) << "Service onMessage: " << message->seq();
         auto p2pMessage = std::dynamic_pointer_cast<P2PMessage>(message);
-        auto options = p2pMessage->options();
-        auto groupID = options->groupID();
-        auto srcNodeID = options->srcNodeID();
-        auto payload = p2pMessage->payload();
-        auto bytesConstRefPayload = bytesConstRef(payload->data(), payload->size());
-        const auto& dstNodeIDs = options->dstNodeIDs();
-
+        auto payload = message->payload();
         SERVICE_LOG(TRACE) << LOG_DESC("onMessage receive message")
                            << LOG_KV("p2pid", shortId(p2pID)) << LOG_KV("endpoint", nodeIPEndpoint)
-                           << LOG_KV("seq", p2pMessage->seq())
-                           << LOG_KV("version", p2pMessage->version())
-                           << LOG_KV("packetType", p2pMessage->packetType());
+                           << LOG_KV("seq", message->seq()) << LOG_KV("version", message->version())
+                           << LOG_KV("packetType", message->packetType());
 
-        auto packetType = p2pMessage->packetType();
+        auto packetType = message->packetType();
         switch (packetType)
         {
         case MessageType::Handshake:
         {
             auto protocolVersionPair = m_p2pVersion->protocolVersionPairJson();
-            sendRespMessageBySession(
-                bytesConstRef((byte*)protocolVersionPair.data(), protocolVersionPair.size()),
-                p2pMessage, p2pSession);
+            auto buffer =
+                std::make_shared<bytes>(protocolVersionPair.begin(), protocolVersionPair.end());
+            p2pSession->asyncSendResponse(buffer, p2pMessage);
         }
         break;
         case MessageType::Heartbeat:
         {
             uint32_t statusSeq = boost::asio::detail::socket_ops::network_to_host_long(
-                *((uint32_t*)bytesConstRefPayload.data()));
+                *((uint32_t*)payload->data()));
             bool statusSeqChanged = false;
             gateway->gatewayNodeManager()->onReceiveStatusSeq(p2pID, statusSeq, statusSeqChanged);
             if (statusSeqChanged)
             {
-                sendMessageBySession(MessageType::RequestNodeIDs, bytesConstRef(), p2pSession);
+                auto buffer = std::make_shared<bytes>();
+                p2pSession->asyncSendMessage(
+                    MessageType::RequestNodeIDs, buffer, Options(), nullptr);
             }
         }
         break;
@@ -511,23 +466,21 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session, Message::P
             gateway->gatewayNodeManager()->onRequestNodeIDs(json);
             if (!json.empty())
             {
-                sendMessageBySession(MessageType::ResponseNodeIDs,
-                    bytesConstRef((byte*)json.data(), json.size()), p2pSession);
+                auto buffer = std::make_shared<bytes>(json.begin(), json.end());
+                p2pSession->asyncSendMessage(
+                    MessageType::ResponseNodeIDs, buffer, Options(), nullptr);
             }
         }
         break;
         case MessageType::ResponseNodeIDs:
         {
             gateway->gatewayNodeManager()->onReceiveNodeIDs(
-                p2pID, std::string(bytesConstRefPayload.begin(), bytesConstRefPayload.end()));
+                p2pID, std::string(payload->begin(), payload->end()));
         }
         break;
-        case MessageType::PeerToPeerMessage:
+        case MessageType::GatewayMessage:
         {
-            bcos::crypto::NodeIDPtr srcNodeIDPtr = m_keyFactory->createKey(*srcNodeID.get());
-            // TODO: fix [0] proble
-            bcos::crypto::NodeIDPtr dstNodeIDPtr = m_keyFactory->createKey(*dstNodeIDs[0].get());
-            gateway->onReceiveP2PMessage(groupID, srcNodeIDPtr, dstNodeIDPtr, bytesConstRefPayload,
+            gateway->onReceiveMessage(bytesConstRef(payload->data(), payload->size()),
                 [message, p2pSession, p2pMessage, serviceWeakPtr](Error::Ptr _error) {
                     auto servicePtr = serviceWeakPtr.lock();
                     if (!servicePtr)
@@ -540,19 +493,12 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session, Message::P
                     if (_error)
                     {
                         SERVICE_LOG(DEBUG)
-                            << "onReceiveP2PMessage callback" << LOG_KV("code", _error->errorCode())
+                            << "onReceiveMessage callback" << LOG_KV("code", _error->errorCode())
                             << LOG_KV("msg", _error->errorMessage());
                     }
-                    servicePtr->sendRespMessageBySession(
-                        bytesConstRef((byte*)errorCode.data(), errorCode.size()), p2pMessage,
-                        p2pSession);
+                    auto buffer = std::make_shared<bytes>(errorCode.begin(), errorCode.end());
+                    p2pSession->asyncSendResponse(buffer, p2pMessage);
                 });
-        }
-        break;
-        case MessageType::BroadcastMessage:
-        {
-            bcos::crypto::NodeIDPtr srcNodeIDPtr = m_keyFactory->createKey(*srcNodeID.get());
-            gateway->onReceiveBroadcastMessage(groupID, srcNodeIDPtr, bytesConstRefPayload);
         }
         break;
         default:
@@ -571,62 +517,8 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session, Message::P
     }
 }
 
-P2PMessage::Ptr Service::sendMessageByNodeID(P2pID nodeID, P2PMessage::Ptr message)
-{
-    try
-    {
-        struct SessionCallback : public std::enable_shared_from_this<SessionCallback>
-        {
-        public:
-            using Ptr = std::shared_ptr<SessionCallback>;
-
-            SessionCallback() { mutex.lock(); }
-
-            void onResponse(
-                NetworkException _error, std::shared_ptr<P2PSession>, P2PMessage::Ptr _message)
-            {
-                error = _error;
-                response = _message;
-                mutex.unlock();
-            }
-
-            NetworkException error;
-            P2PMessage::Ptr response;
-            std::mutex mutex;
-        };
-
-        SessionCallback::Ptr callback = std::make_shared<SessionCallback>();
-        CallbackFuncWithSession fp = std::bind(&SessionCallback::onResponse, callback,
-            std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-        asyncSendMessageByNodeID(nodeID, message, fp, Options());
-        // lock to wait for async send
-        callback->mutex.lock();
-        callback->mutex.unlock();
-        SERVICE_LOG(DEBUG) << LOG_DESC("sendMessageByNodeID mutex unlock");
-
-        NetworkException error = callback->error;
-        if (error.errorCode() != 0)
-        {
-            SERVICE_LOG(ERROR) << LOG_DESC("asyncSendMessageByNodeID error")
-                               << LOG_KV("nodeid", nodeID) << LOG_KV("errorCode", error.errorCode())
-                               << LOG_KV("what", error.what());
-            BOOST_THROW_EXCEPTION(error);
-        }
-
-        return callback->response;
-    }
-    catch (std::exception& e)
-    {
-        SERVICE_LOG(ERROR) << LOG_DESC("asyncSendMessageByNodeID error") << LOG_KV("nodeid", nodeID)
-                           << LOG_KV("what", boost::diagnostic_information(e));
-        BOOST_THROW_EXCEPTION(e);
-    }
-
-    return P2PMessage::Ptr();
-}
-
-void Service::asyncSendMessageByNodeID(
-    P2pID nodeID, P2PMessage::Ptr message, CallbackFuncWithSession callback, Options options)
+void Service::asyncSendMessageByNodeID(P2pID nodeID, uint32_t packetType,
+    std::shared_ptr<bytes> data, CallbackFuncWithSession callback, Options options)
 {
     try
     {
@@ -640,14 +532,10 @@ void Service::asyncSendMessageByNodeID(
         auto it = m_sessions.find(nodeID);
         if (it != m_sessions.end() && it->second->actived())
         {
-            if (message->seq() == 0)
-            {
-                message->setSeq(m_messageFactory->newSeq());
-            }
             auto session = it->second;
             if (callback)
             {
-                session->session()->asyncSendMessage(message, options,
+                session->asyncSendMessage(packetType, data, options,
                     [session, callback](NetworkException e, Message::Ptr message) {
                         P2PMessage::Ptr p2pMessage = std::dynamic_pointer_cast<P2PMessage>(message);
                         if (callback)
@@ -658,7 +546,7 @@ void Service::asyncSendMessageByNodeID(
             }
             else
             {
-                session->session()->asyncSendMessage(message, options, nullptr);
+                session->asyncSendMessage(packetType, data, options, nullptr);
             }
         }
         else
@@ -681,7 +569,8 @@ void Service::asyncSendMessageByNodeID(
     }
 }
 
-void Service::asyncBroadcastMessage(P2PMessage::Ptr message, Options options)
+void Service::asyncBroadcastMessage(
+    uint32_t packetType, std::shared_ptr<bytes> message, Options options)
 {
     try
     {
@@ -693,7 +582,8 @@ void Service::asyncBroadcastMessage(P2PMessage::Ptr message, Options options)
 
         for (auto s : sessions)
         {
-            asyncSendMessageByNodeID(s.first, message, CallbackFuncWithSession(), options);
+            asyncSendMessageByNodeID(
+                s.first, packetType, message, CallbackFuncWithSession(), options);
         }
     }
     catch (std::exception& e)

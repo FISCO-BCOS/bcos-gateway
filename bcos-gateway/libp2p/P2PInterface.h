@@ -56,13 +56,12 @@ public:
 
     virtual P2pID id() const = 0;
 
-    virtual std::shared_ptr<P2PMessage> sendMessageByNodeID(
-        P2pID nodeID, std::shared_ptr<P2PMessage> message) = 0;
+    virtual void asyncSendMessageByNodeID(P2pID nodeID, uint32_t packetType,
+        std::shared_ptr<bytes> message, CallbackFuncWithSession callback,
+        Options options = Options()) = 0;
 
-    virtual void asyncSendMessageByNodeID(P2pID nodeID, std::shared_ptr<P2PMessage> message,
-        CallbackFuncWithSession callback, Options options = Options()) = 0;
-
-    virtual void asyncBroadcastMessage(std::shared_ptr<P2PMessage> message, Options options) = 0;
+    virtual void asyncBroadcastMessage(
+        uint32_t packetType, std::shared_ptr<bytes> message, Options options) = 0;
 
     virtual P2PSessionInfos sessionInfos() = 0;
 

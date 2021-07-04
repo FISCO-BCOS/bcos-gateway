@@ -63,3 +63,37 @@ void P2PSession::stop(DisconnectReason reason)
         }
     }
 }
+
+void P2PSession::asyncSendMessage(uint32_t packetType, std::shared_ptr<bytes> payload,
+    Options options, SessionCallbackFunc callback)
+{
+    auto pv = protocolVersion();
+    auto message = messageFactory()->buildMessage(pv);
+
+    message->setSeq(messageFactory()->newSeq());
+    message->setPacketType(packetType);
+    message->setVersion(protocolVersion());
+    message->setPayload(payload);
+
+    session()->asyncSendMessage(message, options, callback);
+
+    P2PSESSION_LOG(TRACE) << LOG_DESC("asyncSendMessage") << LOG_KV("pv", pv)
+                          << LOG_KV("seq", message->seq()) << LOG_KV("p2pid", shortId(p2pID()))
+                          << LOG_KV("payload size", payload->size());
+}
+
+void P2PSession::asyncSendResponse(std::shared_ptr<bytes> payload, P2PMessage::Ptr p2pMessage)
+{
+    auto pv = protocolVersion();
+    auto message = messageFactory()->buildMessage(pv);
+
+    message->setSeq(p2pMessage->seq());
+    message->setRespPacket();
+    message->setPayload(payload);
+
+    session()->asyncSendMessage(message, Options(), nullptr);
+
+    P2PSESSION_LOG(TRACE) << LOG_DESC("asyncSendResponse") << LOG_KV("pv", pv)
+                          << LOG_KV("seq", message->seq()) << LOG_KV("p2pid", shortId(p2pID()))
+                          << LOG_KV("payload size", payload->size());
+}
