@@ -64,6 +64,11 @@ public:
      * @return void
      */
     void initConfig(std::string const& _configPath);
+    void setCertPath(std::string const& _certPath) { m_certPath = _certPath; }
+    void setNodePath(std::string const& _nodePath) { m_nodePath = _nodePath; }
+
+    std::string const& certPath() const { return m_certPath; }
+    std::string const& nodePath() const { return m_nodePath; }
 
 public:
     // check if the port valid
@@ -103,6 +108,8 @@ private:
     // cert config for ssl connection
     CertConfig m_certConfig;
     SMCertConfig m_smCertConfig;
+    std::string m_certPath;
+    std::string m_nodePath;
 };
 
 }  // namespace gateway
