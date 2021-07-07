@@ -231,7 +231,8 @@ void Gateway::asyncSendMessageByNodeID(const std::string& _groupID,
                         return;
                     }
 
-                    GATEWAY_LOG(TRACE) << LOG_BADGE("Retry") << LOG_KV("p2pid", shortId(p2pID))
+                    GATEWAY_LOG(DEBUG) << LOG_BADGE("Retry") << LOG_KV("p2pid", shortId(p2pID))
+                                       << LOG_KV("seq", std::to_string(m_p2pMessage->seq()))
                                        << LOG_KV("srcNodeID", self->m_srcNodeID->hex())
                                        << LOG_KV("dstNodeID", self->m_dstNodeID->hex());
                     // send message successfully
@@ -296,6 +297,10 @@ void Gateway::asyncSendMessageByNodeIDs(const std::string& _groupID,
                     << LOG_KV("dstNodeID", dstNodeID->hex()) << LOG_KV("code", _error->errorCode());
             });
     }
+
+    GATEWAY_LOG(DEBUG) << "asyncSendMessageByNodeIDs send message" << LOG_KV("groupID", _groupID)
+                       << LOG_KV("seq", p2pMessage->seq())
+                       << LOG_KV("node count", _dstNodeIDs->size());
 }
 
 /**
@@ -324,7 +329,8 @@ void Gateway::asyncSendBroadcastMessage(
         m_p2pInterface->asyncSendMessageByNodeID(p2pID, p2pMessage, CallbackFuncWithSession());
     }
 
-    GATEWAY_LOG(TRACE) << "asyncSendBroadcastMessage send message" << LOG_KV("groupID", _groupID);
+    GATEWAY_LOG(DEBUG) << "asyncSendBroadcastMessage send message" << LOG_KV("groupID", _groupID)
+                       << LOG_KV("seq", p2pMessage->seq());
 }
 
 /**
@@ -367,7 +373,7 @@ void Gateway::onReceiveP2PMessage(const std::string& _groupID, bcos::crypto::Nod
             {
                 _errorRespFunc(_error);
             }
-            GATEWAY_LOG(TRACE) << LOG_DESC("onReceiveP2PMessage callback")
+            GATEWAY_LOG(DEBUG) << LOG_DESC("onReceiveP2PMessage callback")
                                << LOG_KV("groupID", _groupID)
                                << LOG_KV("srcNodeID", _srcNodeID->hex())
                                << LOG_KV("dstNodeID", _dstNodeID->hex())
@@ -392,7 +398,7 @@ void Gateway::onReceiveBroadcastMessage(
     {
         frontServiceInterface->onReceiveMessage(
             _groupID, _srcNodeID, _payload, [_groupID, _srcNodeID](Error::Ptr _error) {
-                GATEWAY_LOG(TRACE)
+                GATEWAY_LOG(DEBUG)
                     << LOG_DESC("onReceiveBroadcastMessage callback") << LOG_KV("groupID", _groupID)
                     << LOG_KV("srcNodeID", _srcNodeID->hex())
                     << LOG_KV("code", (_error ? _error->errorCode() : 0))

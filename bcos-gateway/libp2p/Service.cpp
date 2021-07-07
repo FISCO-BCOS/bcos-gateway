@@ -340,7 +340,7 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session, Message::P
         auto bytesConstRefPayload = bytesConstRef(payload->data(), payload->size());
         const auto& dstNodeIDs = options->dstNodeIDs();
 
-        SERVICE_LOG(TRACE) << LOG_DESC("onMessage receive message")
+        SERVICE_LOG(DEBUG) << LOG_DESC("onMessage receive message")
                            << LOG_KV("p2pid", shortId(p2pID)) << LOG_KV("endpoint", nodeIPEndpoint)
                            << LOG_KV("seq", p2pMessage->seq())
                            << LOG_KV("version", p2pMessage->version())
