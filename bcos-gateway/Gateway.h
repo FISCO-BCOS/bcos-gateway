@@ -44,6 +44,13 @@ public:
 
 public:
     /**
+     * @brief: get connected peers
+     * @param _peerRespFunc:
+     * @return void
+     */
+    virtual void asyncGetPeers(PeerRespFunc _peerRespFunc) override;
+
+    /**
      * @brief: construct Message object
      */
     std::shared_ptr<P2PMessage> newP2PMessage(const std::string& _groupID,

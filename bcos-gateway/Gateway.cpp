@@ -23,6 +23,7 @@
 #include <bcos-framework/libutilities/Exceptions.h>
 #include <bcos-gateway/Common.h>
 #include <bcos-gateway/Gateway.h>
+#include <json/json.h>
 #include <algorithm>
 #include <random>
 
@@ -100,6 +101,43 @@ std::shared_ptr<P2PMessage> Gateway::newP2PMessage(
     message->setPayload(std::make_shared<bytes>(_payload.begin(), _payload.end()));
 
     return message;
+}
+
+/**
+ * @brief: get connected peers
+ * @param _peerRespFunc:
+ * @return void
+ */
+void Gateway::asyncGetPeers(PeerRespFunc _peerRespFunc)
+{
+    std::string peersInfo;
+    // generator json first
+    try
+    {
+        auto sessions = m_p2pInterface->sessionInfos();
+        Json::Value jSessions = Json::Value(Json::arrayValue);
+        for (const auto& session : sessions)
+        {
+            Json::Value jSession;
+            jSession["p2pID"] = session.p2pInfo.p2pID;
+            jSession["endpoint"] = boost::lexical_cast<std::string>(session.nodeIPEndpoint);
+            jSession["agency"] = session.p2pInfo.agencyName;
+            jSession["p2pNodeName"] = session.p2pInfo.nodeName;
+
+            jSessions.append(jSession);
+        }
+
+        Json::FastWriter writer;
+        peersInfo = writer.write(jSessions);
+
+        GATEWAY_LOG(INFO) << LOG_DESC("asyncGetPeers") << LOG_KV("peersInfo", peersInfo);
+    }
+    catch (const std::exception& e)
+    {
+        GATEWAY_LOG(ERROR) << LOG_DESC("asyncGetPeers error: " + boost::diagnostic_information(e));
+    }
+
+    _peerRespFunc(nullptr, peersInfo);
 }
 
 /**
