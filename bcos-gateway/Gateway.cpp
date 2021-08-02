@@ -206,8 +206,9 @@ void Gateway::asyncSendMessageByNodeID(const std::string& _groupID,
             {
                 // shuffle
                 std::random_device rd;
-                std::default_random_engine rng(rd());
+                std::mt19937 rng(rd());
                 std::shuffle(m_p2pIDs.begin(), m_p2pIDs.end(), rng);
+
                 p2pId = *m_p2pIDs.begin();
                 m_p2pIDs.erase(m_p2pIDs.begin());
             }
