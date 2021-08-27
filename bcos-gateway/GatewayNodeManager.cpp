@@ -217,27 +217,13 @@ void GatewayNodeManager::notifyNodeIDs2FrontService()
     {
         const auto& groupID = groupEntry.first;
 
-        std::set<std::string> nodeIDsSet;
-        queryNodeIDsByGroupID(groupID, nodeIDsSet);
-
         std::shared_ptr<crypto::NodeIDs> nodeIDs = std::make_shared<crypto::NodeIDs>();
 
-        std::stringstream ss;
-        for (auto const& nodeIDStr : nodeIDsSet)
-        {
-            ss << " " << nodeIDStr;
-            auto bytes = bcos::fromHexString(nodeIDStr);
-            if (bytes)
-            {
-                auto nodeID = m_keyFactory->createKey(*bytes.get());
-                nodeIDs->push_back(nodeID);
-            }
-        }
+        queryNodeIDsByGroupID(groupID, *nodeIDs);
 
         NODE_MANAGER_LOG(INFO) << LOG_DESC("notifyNodeIDs2FrontService")
                                << LOG_KV("groupID", groupID)
-                               << LOG_KV("nodeCount", nodeIDsSet.size())
-                               << LOG_KV("nodeIDs", "[" + ss.str() + " ]");
+                               << LOG_KV("nodeCount", nodeIDs->size());
 
         for (const auto& frontServiceEntry : groupEntry.second)
         {
@@ -246,9 +232,10 @@ void GatewayNodeManager::notifyNodeIDs2FrontService()
                 {
                     return;
                 }
-                NODE_MANAGER_LOG(TRACE)
+                NODE_MANAGER_LOG(WARNING)
                     << LOG_DESC("notifyNodeIDs2FrontService onReceiveNodeIDs callback")
-                    << LOG_KV("code", (_error ? _error->errorCode() : 0));
+                    << LOG_KV("codeCode", _error->errorCode())
+                    << LOG_KV("codeMessage", _error->errorMessage());
             });
         }
     }
@@ -518,7 +505,7 @@ bool GatewayNodeManager::queryP2pIDsByGroupID(const std::string& _groupID, std::
 }
 
 bool GatewayNodeManager::queryNodeIDsByGroupID(
-    const std::string& _groupID, std::set<std::string>& _nodeIDs)
+    const std::string& _groupID, bcos::crypto::NodeIDs& _nodeIDs)
 {
     std::lock_guard<std::mutex> l(x_peerGatewayNodes);
 
@@ -530,7 +517,12 @@ bool GatewayNodeManager::queryNodeIDsByGroupID(
 
     for (const auto& nodeEntry : it->second)
     {
-        _nodeIDs.insert(nodeEntry.first);
+        auto bytes = bcos::fromHexString(nodeEntry.first);
+        if (bytes)
+        {
+            auto nodeID = m_keyFactory->createKey(*bytes.get());
+            _nodeIDs.push_back(nodeID);
+        }
     }
 
     return true;

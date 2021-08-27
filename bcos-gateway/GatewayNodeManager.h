@@ -55,7 +55,7 @@ public:
     bool queryP2pIDs(
         const std::string& _groupID, const std::string& _nodeID, std::set<P2pID>& _p2pIDs);
     bool queryP2pIDsByGroupID(const std::string& _groupID, std::set<P2pID>& _p2pIDs);
-    bool queryNodeIDsByGroupID(const std::string& _groupID, std::set<std::string>& _nodeIDs);
+    bool queryNodeIDsByGroupID(const std::string& _groupID, bcos::crypto::NodeIDs& _nodeIDs);
 
     void showAllPeerGatewayNodeIDs();
     void notifyNodeIDs2FrontService();
