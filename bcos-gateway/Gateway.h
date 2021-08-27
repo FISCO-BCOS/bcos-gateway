@@ -49,7 +49,14 @@ public:
      * @return void
      */
     virtual void asyncGetPeers(PeerRespFunc _peerRespFunc) override;
-
+    /**
+     * @brief: get nodeIDs from gateway
+     * @param _groupID:
+     * @param _getNodeIDsFunc: get nodeIDs callback
+     * @return void
+     */
+    virtual void asyncGetNodeIDs(
+        const std::string& _groupID, GetNodeIDsFunc _getNodeIDsFunc) override;
     /**
      * @brief: construct Message object
      */

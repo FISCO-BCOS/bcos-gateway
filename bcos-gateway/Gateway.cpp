@@ -24,6 +24,7 @@
 #include <bcos-gateway/Common.h>
 #include <bcos-gateway/Gateway.h>
 #include <json/json.h>
+#include <boost/core/ignore_unused.hpp>
 #include <algorithm>
 #include <random>
 
@@ -141,6 +142,19 @@ void Gateway::asyncGetPeers(PeerRespFunc _peerRespFunc)
 }
 
 /**
+ * @brief: get nodeIDs from gateway
+ * @param _groupID:
+ * @param _getNodeIDsFunc: get nodeIDs callback
+ * @return void
+ */
+void Gateway::asyncGetNodeIDs(const std::string& _groupID, GetNodeIDsFunc _getNodeIDsFunc)
+{
+    std::shared_ptr<crypto::NodeIDs> nodeIDs = std::make_shared<crypto::NodeIDs>();
+    m_gatewayNodeManager->queryNodeIDsByGroupID(_groupID, *nodeIDs);
+    _getNodeIDsFunc(nullptr, nodeIDs);
+}
+
+/**
  * @brief: register FrontService
  * @param _groupID: groupID
  * @param _nodeID: nodeID
@@ -240,6 +254,7 @@ void Gateway::asyncSendMessageByNodeID(const std::string& _groupID,
             auto self = shared_from_this();
             auto callback = [self, p2pID](NetworkException e, std::shared_ptr<P2PSession> session,
                                 std::shared_ptr<P2PMessage> message) {
+                boost::ignore_unused(session);
                 // network error
                 if (e.errorCode() != P2PExceptionType::Success)
                 {
