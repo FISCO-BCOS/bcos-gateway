@@ -152,6 +152,16 @@ public:
         m_gatewayNodeManager = _gatewayNodeManager;
     }
 
+    /**
+     * @brief receive the latest group information notification from the GroupManagerInterface
+     *
+     * @param _groupInfo the latest group information
+     */
+    // TODO: implement this
+    void asyncNotifyGroupInfo(
+        bcos::group::GroupInfo::Ptr, std::function<void(Error::Ptr&&)>) override
+    {}
+
 private:
     // p2p service interface
     P2PInterface::Ptr m_p2pInterface;
