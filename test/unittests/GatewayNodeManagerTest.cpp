@@ -48,7 +48,8 @@ BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_registerFrontService)
     std::string strNodeID = "nodeID";
     auto keyFactory = std::make_shared<bcos::crypto::KeyFactoryImpl>();
 
-    auto nodeID = keyFactory->createKey(bytesConstRef((byte*)strNodeID.data(), strNodeID.size()));
+    auto nodeID =
+        keyFactory->createKey(bytesConstRef((bcos::byte*)strNodeID.data(), strNodeID.size()));
 
     auto frontServiceFactory = std::make_shared<bcos::front::FrontServiceFactory>();
     frontServiceFactory->setGatewayInterface(std::make_shared<bcos::gateway::Gateway>());
@@ -105,7 +106,7 @@ BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_registerFrontService_loop)
         std::string groupID = "group" + std::to_string(i);
 
         auto nodeID =
-            keyFactory->createKey(bytesConstRef((byte*)strNodeID.data(), strNodeID.size()));
+            keyFactory->createKey(bytesConstRef((bcos::byte*)strNodeID.data(), strNodeID.size()));
 
         auto seq = gatewayNodeManager->statusSeq();
         bool r = gatewayNodeManager->registerFrontService(groupID, nodeID, nullptr);
@@ -144,7 +145,7 @@ BOOST_AUTO_TEST_CASE(test_GatewayNodeManager_onRequestNodeIDs)
         std::string strNodeID = "nodeID" + std::to_string(i);
 
         auto nodeID =
-            keyFactory->createKey(bytesConstRef((byte*)strNodeID.data(), strNodeID.size()));
+            keyFactory->createKey(bytesConstRef((bcos::byte*)strNodeID.data(), strNodeID.size()));
 
         bool r = false;
         auto seq = gatewayNodeManager->statusSeq();

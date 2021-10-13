@@ -39,15 +39,14 @@ void Gateway::start()
         m_p2pInterface->start();
     }
 
-    const auto& groupID2NodeID2FrontServiceInterface =
-        m_gatewayNodeManager->groupID2NodeID2FrontServiceInterface();
-    if (groupID2NodeID2FrontServiceInterface.empty())
+    const auto& frontServiceInfos = m_gatewayNodeManager->frontServiceInfos();
+    if (frontServiceInfos.empty())
     {
         GATEWAY_LOG(WARNING) << LOG_DESC("gateway has no registered front service");
     }
     else
     {
-        for (const auto& group : groupID2NodeID2FrontServiceInterface)
+        for (const auto& group : frontServiceInfos)
         {
             for (const auto& node : group.second)
             {
@@ -451,5 +450,15 @@ void Gateway::onReceiveBroadcastMessage(
                     << LOG_KV("code", (_error ? _error->errorCode() : 0))
                     << LOG_KV("msg", (_error ? _error->errorMessage() : ""));
             });
+    }
+}
+
+void Gateway::asyncNotifyGroupInfo(
+    bcos::group::GroupInfo::Ptr _groupInfo, std::function<void(Error::Ptr&&)> _callback)
+{
+    m_gatewayNodeManager->updateFrontServiceInfo(_groupInfo);
+    if (_callback)
+    {
+        _callback(nullptr);
     }
 }

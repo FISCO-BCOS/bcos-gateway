@@ -32,8 +32,9 @@ class GatewayNodeManager
 {
 public:
     using Ptr = std::shared_ptr<GatewayNodeManager>;
+    GatewayNodeManager() = default;
+    virtual ~GatewayNodeManager() {}
 
-public:
     uint32_t statusSeq() { return m_statusSeq; }
     uint32_t increaseSeq()
     {
@@ -73,7 +74,6 @@ public:
      */
     bool registerFrontService(const std::string& _groupID, bcos::crypto::NodeIDPtr _nodeID,
         bcos::front::FrontServiceInterface::Ptr _frontServiceInterface);
-
     /**
      * @brief: unregister FrontService
      * @param _groupID: groupID
@@ -82,12 +82,14 @@ public:
      */
     bool unregisterFrontService(const std::string& _groupID, bcos::crypto::NodeIDPtr _nodeID);
 
+    virtual void updateFrontServiceInfo(bcos::group::GroupInfo::Ptr _groupInfo);
+
 public:
     const std::unordered_map<std::string,
         std::unordered_map<std::string, bcos::front::FrontServiceInterface::Ptr>>&
-    groupID2NodeID2FrontServiceInterface() const
+    frontServiceInfos() const
     {
-        return m_groupID2NodeID2FrontServiceInterface;
+        return m_frontServiceInfos;
     }
 
     std::shared_ptr<bcos::crypto::KeyFactory> keyFactory() { return m_keyFactory; }
@@ -109,11 +111,11 @@ private:
     // P2pID => statusSeq
     std::unordered_map<std::string, uint32_t> m_p2pID2Seq;
     // lock m_groupID2FrontServiceInterface
-    mutable std::mutex x_groupID2NodeID2FrontServiceInterface;
+    mutable std::mutex x_frontServiceInfos;
     // groupID => nodeID => FrontServiceInterface
     std::unordered_map<std::string,
         std::unordered_map<std::string, bcos::front::FrontServiceInterface::Ptr>>
-        m_groupID2NodeID2FrontServiceInterface;
+        m_frontServiceInfos;
 };
 }  // namespace gateway
 }  // namespace bcos

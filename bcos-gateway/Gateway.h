@@ -157,10 +157,8 @@ public:
      *
      * @param _groupInfo the latest group information
      */
-    // TODO: implement this
     void asyncNotifyGroupInfo(
-        bcos::group::GroupInfo::Ptr, std::function<void(Error::Ptr&&)>) override
-    {}
+        bcos::group::GroupInfo::Ptr, std::function<void(Error::Ptr&&)>) override;
 
 private:
     // p2p service interface

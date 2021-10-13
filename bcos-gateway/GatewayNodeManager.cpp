@@ -19,13 +19,17 @@
  * @date 2021-05-13
  */
 #include <bcos-framework/interfaces/protocol/CommonError.h>
+#include <bcos-framework/interfaces/protocol/ServiceDesc.h>
 #include <bcos-framework/libutilities/DataConvertUtility.h>
 #include <bcos-gateway/GatewayNodeManager.h>
+#include <bcos-tars-protocol/client/FrontServiceClient.h>
 #include <json/json.h>
 
 using namespace std;
 using namespace bcos;
 using namespace gateway;
+using namespace bcos::protocol;
+using namespace bcos::group;
 
 /**
  * @brief: register FrontService
@@ -39,9 +43,9 @@ bool GatewayNodeManager::registerFrontService(const std::string& _groupID,
 {
     bool isExist = false;
     {
-        std::lock_guard<std::mutex> l(x_groupID2NodeID2FrontServiceInterface);
-        auto it = m_groupID2NodeID2FrontServiceInterface.find(_groupID);
-        if (it != m_groupID2NodeID2FrontServiceInterface.end())
+        std::lock_guard<std::mutex> l(x_frontServiceInfos);
+        auto it = m_frontServiceInfos.find(_groupID);
+        if (it != m_frontServiceInfos.end())
         {
             auto innerIt = it->second.find(_nodeID->hex());
             isExist = (innerIt != it->second.end());
@@ -49,8 +53,7 @@ bool GatewayNodeManager::registerFrontService(const std::string& _groupID,
 
         if (!isExist)
         {
-            m_groupID2NodeID2FrontServiceInterface[_groupID][_nodeID->hex()] =
-                _frontServiceInterface;
+            m_frontServiceInfos[_groupID][_nodeID->hex()] = _frontServiceInterface;
             increaseSeq();
         }
     }
@@ -71,6 +74,57 @@ bool GatewayNodeManager::registerFrontService(const std::string& _groupID,
     return !isExist;
 }
 
+void GatewayNodeManager::updateFrontServiceInfo(bcos::group::GroupInfo::Ptr _groupInfo)
+{
+    NODE_MANAGER_LOG(INFO) << LOG_DESC("updateFrontServiceInfo") << printGroupInfo(_groupInfo);
+    Guard l(x_frontServiceInfos);
+    auto const& groupID = _groupInfo->groupID();
+    // erase all the front service of the not-started group
+    if (_groupInfo->status() != GroupStatus::Started)
+    {
+        m_frontServiceInfos.erase(groupID);
+        increaseSeq();
+        return;
+    }
+
+    auto const& nodeInfos = _groupInfo->nodeInfos();
+    for (auto const& it : nodeInfos)
+    {
+        // the node is not-started
+        auto const& nodeInfo = it.second;
+        auto const& nodeID = nodeInfo->nodeID();
+        if (nodeInfo->status() != GroupStatus::Started)
+        {
+            if (m_frontServiceInfos.count(groupID))
+            {
+                m_frontServiceInfos[groupID].erase(nodeID);
+                increaseSeq();
+                NODE_MANAGER_LOG(INFO)
+                    << LOG_DESC(
+                           "updateFrontServiceInfo: erase frontService of the not-started node")
+                    << printNodeInfo(nodeInfo);
+            }
+            continue;
+        }
+        // the node is started
+        if (m_frontServiceInfos.count(nodeID))
+        {
+            continue;
+        }
+        // createFrontService
+        auto appName =
+            getApplicationName(_groupInfo->chainID(), _groupInfo->groupID(), nodeInfo->nodeName());
+        auto frontService =
+            createServiceClient<bcostars::FrontServiceClient, bcostars::FrontServicePrx>(
+                appName, FRONT_SERVICE_NAME, m_keyFactory);
+        m_frontServiceInfos[groupID][nodeID] = frontService;
+        NODE_MANAGER_LOG(INFO)
+            << LOG_DESC("updateFrontServiceInfo: insert frontService for the started node")
+            << printNodeInfo(nodeInfo);
+        increaseSeq();
+    }
+}
+
 /**
  * @brief: unregister FrontService
  * @param _groupID: groupID
@@ -82,9 +136,9 @@ bool GatewayNodeManager::unregisterFrontService(
 {
     bool isOK = false;
     {
-        std::lock_guard<std::mutex> l(x_groupID2NodeID2FrontServiceInterface);
-        auto it = m_groupID2NodeID2FrontServiceInterface.find(_groupID);
-        if (it != m_groupID2NodeID2FrontServiceInterface.end())
+        std::lock_guard<std::mutex> l(x_frontServiceInfos);
+        auto it = m_frontServiceInfos.find(_groupID);
+        if (it != m_frontServiceInfos.end())
         {
             auto innerIt = it->second.find(_nodeID->hex());
             if (innerIt != it->second.end())
@@ -94,7 +148,7 @@ bool GatewayNodeManager::unregisterFrontService(
                 isOK = true;
                 if (it->second.empty())
                 {
-                    m_groupID2NodeID2FrontServiceInterface.erase(it);
+                    m_frontServiceInfos.erase(it);
                 }
             }
         }
@@ -122,9 +176,9 @@ GatewayNodeManager::queryFrontServiceInterfaceByGroupIDAndNodeID(
 {
     bcos::front::FrontServiceInterface::Ptr frontServiceInterface = nullptr;
     {
-        std::lock_guard<std::mutex> l(x_groupID2NodeID2FrontServiceInterface);
-        auto it = m_groupID2NodeID2FrontServiceInterface.find(_groupID);
-        if (it != m_groupID2NodeID2FrontServiceInterface.end())
+        std::lock_guard<std::mutex> l(x_frontServiceInfos);
+        auto it = m_frontServiceInfos.find(_groupID);
+        if (it != m_frontServiceInfos.end())
         {
             auto innerIt = it->second.find(_nodeID->hex());
             if (innerIt != it->second.end())
@@ -152,9 +206,9 @@ GatewayNodeManager::queryFrontServiceInterfaceByGroupID(const std::string& _grou
 {
     std::set<bcos::front::FrontServiceInterface::Ptr> frontServiceInterfaces;
     {
-        std::lock_guard<std::mutex> l(x_groupID2NodeID2FrontServiceInterface);
-        auto it = m_groupID2NodeID2FrontServiceInterface.find(_groupID);
-        if (it != m_groupID2NodeID2FrontServiceInterface.end())
+        std::lock_guard<std::mutex> l(x_frontServiceInfos);
+        auto it = m_frontServiceInfos.find(_groupID);
+        if (it != m_frontServiceInfos.end())
         {
             for (const auto& innerIt : it->second)
             {
@@ -207,13 +261,13 @@ void GatewayNodeManager::notifyNodeIDs2FrontService()
 {
     std::unordered_map<std::string,
         std::unordered_map<std::string, bcos::front::FrontServiceInterface::Ptr>>
-        groupID2NodeID2FrontServiceInterface;
+        frontServiceInfos;
     {
-        std::lock_guard<std::mutex> l(x_groupID2NodeID2FrontServiceInterface);
-        groupID2NodeID2FrontServiceInterface = m_groupID2NodeID2FrontServiceInterface;
+        std::lock_guard<std::mutex> l(x_frontServiceInfos);
+        frontServiceInfos = m_frontServiceInfos;
     }
 
-    for (auto const& groupEntry : groupID2NodeID2FrontServiceInterface)
+    for (auto const& groupEntry : frontServiceInfos)
     {
         const auto& groupID = groupEntry.first;
 
@@ -401,15 +455,13 @@ void GatewayNodeManager::onRequestNodeIDs(std::string& _nodeIDsJson)
     std::unordered_map<std::string, std::set<std::string>> localGroup2NodeIDs;
     uint32_t seq = 0;
     {
-        std::lock_guard<std::mutex> l(x_groupID2NodeID2FrontServiceInterface);
+        std::lock_guard<std::mutex> l(x_frontServiceInfos);
         seq = statusSeq();
-        for (const auto& groupID2NodeID2FrontServiceInterface :
-            m_groupID2NodeID2FrontServiceInterface)
+        for (const auto& frontServiceInfos : m_frontServiceInfos)
         {
-            for (const auto& nodeID2FrontServiceInterface :
-                groupID2NodeID2FrontServiceInterface.second)
+            for (const auto& nodeID2FrontServiceInterface : frontServiceInfos.second)
             {
-                localGroup2NodeIDs[groupID2NodeID2FrontServiceInterface.first].insert(
+                localGroup2NodeIDs[frontServiceInfos.first].insert(
                     nodeID2FrontServiceInterface.first);
             }
         }
