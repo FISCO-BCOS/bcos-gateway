@@ -18,9 +18,26 @@
  * @date 2021-05-04
  */
 #pragma once
+#include <bcos-framework/interfaces/protocol/ServiceDesc.h>
+#include <tarscpp/servant/Application.h>
 
 #define GATEWAY_LOG(LEVEL) BCOS_LOG(LEVEL) << "[Gateway][Gateway]"
 #define GATEWAY_CONFIG_LOG(LEVEL) BCOS_LOG(LEVEL) << "[Gateway][Config]"
 #define GATEWAY_FACTORY_LOG(LEVEL) BCOS_LOG(LEVEL) << "[Gateway][Factory]"
 #define INITIALIZER_LOG(LEVEL) BCOS_LOG(LEVEL) << "[Gateway][Initializer]"
 #define NODE_MANAGER_LOG(LEVEL) BCOS_LOG(LEVEL) << "[Gateway][GatewayNodeManager]"
+
+namespace bcos
+{
+namespace gateway
+{
+template <typename T, typename S, typename... Args>
+std::shared_ptr<T> createServiceClient(
+    std::string const& _appName, std::string const& _serviceName, const Args&... _args)
+{
+    auto servantName = bcos::protocol::getPrxDesc(_appName, _serviceName);
+    auto prx = Application::getCommunicator()->stringToProxy<S>(servantName);
+    return std::make_shared<T>(prx, _args...);
+}
+}  // namespace gateway
+}  // namespace bcos
