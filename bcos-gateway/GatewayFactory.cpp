@@ -280,10 +280,7 @@ std::shared_ptr<Gateway> GatewayFactory::buildGateway(GatewayConfig::Ptr _config
         auto keyFactory = std::make_shared<bcos::crypto::KeyFactoryImpl>();
 
         // init Host
-        auto host = std::make_shared<Host>();
-        host->setASIOInterface(asioInterface);
-        host->setSessionFactory(sessionFactory);
-        host->setMessageFactory(messageFactory);
+        auto host = std::make_shared<Host>(asioInterface, sessionFactory, messageFactory);
 
         host->setHostPort(_config->listenIP(), _config->listenPort());
         host->setThreadPool(std::make_shared<ThreadPool>("P2P", _config->threadPoolSize()));
@@ -306,11 +303,8 @@ std::shared_ptr<Gateway> GatewayFactory::buildGateway(GatewayConfig::Ptr _config
         gatewayNodeManager->setKeyFactory(keyFactory);
 
         // init Gateway
-        auto gateway = std::make_shared<Gateway>();
-
-        gateway->setP2PInterface(service);
-        gateway->setGatewayNodeManager(gatewayNodeManager);
-
+        auto gateway =
+            std::make_shared<Gateway>(m_chainID, service, gatewayNodeManager, m_groupManager);
         auto weakptrGatewayNodeManager = std::weak_ptr<GatewayNodeManager>(gatewayNodeManager);
         service->setGateway(std::weak_ptr<Gateway>(gateway));
         // register disconnect handler

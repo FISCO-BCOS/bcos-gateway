@@ -31,6 +31,7 @@
 using namespace bcos;
 using namespace bcos::protocol;
 using namespace bcos::gateway;
+using namespace bcos::group;
 
 void Gateway::start()
 {
@@ -70,6 +71,57 @@ void Gateway::stop()
 
     GATEWAY_LOG(INFO) << LOG_DESC("stop end.");
     return;
+}
+
+// init the gateway
+void Gateway::init()
+{
+    GATEWAY_LOG(INFO) << LOG_DESC("Init gateway");
+    auto initRet = std::make_shared<std::promise<Error::Ptr>>();
+    auto future = initRet->get_future();
+    m_groupManager->asyncGetGroupList(
+        m_chainID, [this, initRet](Error::Ptr&& _error, std::set<std::string>&& _groupList) {
+            if (_error)
+            {
+                GATEWAY_LOG(ERROR)
+                    << LOG_DESC("Gateway init failed for getGroupList from GroupManager failed")
+                    << LOG_KV("code", _error->errorCode()) << LOG_KV("msg", _error->errorMessage());
+                initRet->set_value(std::move(_error));
+                return;
+            }
+            // get and update all groupInfos
+            GATEWAY_LOG(INFO)
+                << LOG_DESC("Gateway init: fetch groupList success, fetch group information now")
+                << LOG_KV("groupSize", _groupList.size());
+            std::vector<std::string> groupList(_groupList.begin(), _groupList.end());
+            m_groupManager->asyncGetGroupInfos(m_chainID, groupList,
+                [this, initRet](Error::Ptr&& _error, std::vector<GroupInfo::Ptr>&& _groupInfos) {
+                    if (_error)
+                    {
+                        GATEWAY_LOG(ERROR)
+                            << LOG_DESC("Gateway init failed for get group informations failed")
+                            << LOG_KV("code", _error->errorCode())
+                            << LOG_KV("msg", _error->errorMessage());
+                        initRet->set_value(std::move(_error));
+                        return;
+                    }
+                    GATEWAY_LOG(INFO) << LOG_DESC("Gateway init: fetch group information succcess");
+                    for (auto const& groupInfo : _groupInfos)
+                    {
+                        m_gatewayNodeManager->updateFrontServiceInfo(groupInfo);
+                    }
+                    initRet->set_value(nullptr);
+                });
+        });
+    auto error = future.get();
+    if (error)
+    {
+        BOOST_THROW_EXCEPTION(
+            GatewayInitError() << errinfo_comment(
+                "Gateway init error for get group informations failed, code: " +
+                std::to_string(error->errorCode()) + ", message:" + error->errorMessage()));
+    }
+    GATEWAY_LOG(INFO) << LOG_DESC("Gateway init success");
 }
 
 std::shared_ptr<P2PMessage> Gateway::newP2PMessage(const std::string& _groupID,

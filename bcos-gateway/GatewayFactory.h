@@ -23,6 +23,7 @@
 
 #include <bcos-framework/interfaces/crypto/KeyFactory.h>
 #include <bcos-framework/interfaces/front/FrontServiceInterface.h>
+#include <bcos-framework/interfaces/multigroup/GroupManagerInterface.h>
 #include <bcos-gateway/Gateway.h>
 #include <bcos-gateway/GatewayConfig.h>
 #include <boost/asio/ssl.hpp>
@@ -36,7 +37,9 @@ class GatewayFactory
 public:
     using Ptr = std::shared_ptr<GatewayFactory>;
 
-    GatewayFactory()
+    GatewayFactory(
+        std::string const& _chainID, bcos::group::GroupManagerInterface::Ptr _groupManager)
+      : m_chainID(_chainID), m_groupManager(_groupManager)
     {
         initCert2PubHexHandler();
         initSSLContextPubHexHandler();
@@ -44,18 +47,11 @@ public:
 
     virtual ~GatewayFactory() = default;
 
-public:
     // init the function calc public hex from the cert
     void initCert2PubHexHandler();
     // init the function calc public key from the ssl context
     void initSSLContextPubHexHandler();
 
-private:
-    std::function<bool(X509* cert, std::string& pubHex)> m_sslContextPubHandler;
-
-    std::function<bool(const std::string& priKey, std::string& pubHex)> m_certPubHexHandler;
-
-public:
     std::function<bool(X509* cert, std::string& pubHex)> sslContextPubHandler()
     {
         return m_sslContextPubHandler;
@@ -66,7 +62,6 @@ public:
         return m_certPubHexHandler;
     }
 
-public:
     // build ssl context
     std::shared_ptr<boost::asio::ssl::context> buildSSLContext(
         const GatewayConfig::CertConfig& _certConfig);
@@ -86,6 +81,15 @@ public:
      * @return void
      */
     Gateway::Ptr buildGateway(GatewayConfig::Ptr _config);
+
+private:
+    std::function<bool(X509* cert, std::string& pubHex)> m_sslContextPubHandler;
+
+    std::function<bool(const std::string& priKey, std::string& pubHex)> m_certPubHexHandler;
+
+private:
+    std::string m_chainID;
+    bcos::group::GroupManagerInterface::Ptr m_groupManager;
 };
 }  // namespace gateway
 }  // namespace bcos

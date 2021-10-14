@@ -22,6 +22,7 @@
 
 #include <bcos-framework/interfaces/front/FrontServiceInterface.h>
 #include <bcos-framework/interfaces/gateway/GatewayInterface.h>
+#include <bcos-framework/interfaces/multigroup/GroupManagerInterface.h>
 #include <bcos-gateway/Common.h>
 #include <bcos-gateway/GatewayNodeManager.h>
 #include <bcos-gateway/libp2p/Service.h>
@@ -36,13 +37,20 @@ public:
     using Ptr = std::shared_ptr<Gateway>;
 
 public:
-    Gateway() {}
+    Gateway(std::string const& _chainID, P2PInterface::Ptr _p2pInterface,
+        GatewayNodeManager::Ptr _gatewayNodeManager,
+        bcos::group::GroupManagerInterface::Ptr _groupManager)
+      : m_chainID(_chainID),
+        m_p2pInterface(_p2pInterface),
+        m_gatewayNodeManager(_gatewayNodeManager),
+        m_groupManager(_groupManager)
+    {}
     virtual ~Gateway() { stop(); }
 
-    virtual void start() override;
-    virtual void stop() override;
+    void start() override;
+    void stop() override;
+    virtual void init();
 
-public:
     /**
      * @brief: get connected peers
      * @param _peerRespFunc:
@@ -142,16 +150,8 @@ public:
     virtual void onReceiveBroadcastMessage(
         const std::string& _groupID, bcos::crypto::NodeIDPtr _srcNodeID, bytesConstRef _payload);
 
-public:
     P2PInterface::Ptr p2pInterface() const { return m_p2pInterface; }
-    void setP2PInterface(P2PInterface::Ptr _p2pInterface) { m_p2pInterface = _p2pInterface; }
-
     GatewayNodeManager::Ptr gatewayNodeManager() { return m_gatewayNodeManager; }
-    void setGatewayNodeManager(GatewayNodeManager::Ptr _gatewayNodeManager)
-    {
-        m_gatewayNodeManager = _gatewayNodeManager;
-    }
-
     /**
      * @brief receive the latest group information notification from the GroupManagerInterface
      *
@@ -161,11 +161,12 @@ public:
         bcos::group::GroupInfo::Ptr, std::function<void(Error::Ptr&&)>) override;
 
 private:
+    std::string m_chainID;
     // p2p service interface
     P2PInterface::Ptr m_p2pInterface;
     // GatewayNodeManager
     GatewayNodeManager::Ptr m_gatewayNodeManager;
+    bcos::group::GroupManagerInterface::Ptr m_groupManager;
 };
-
 }  // namespace gateway
 }  // namespace bcos
