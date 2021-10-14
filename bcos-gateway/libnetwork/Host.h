@@ -60,7 +60,11 @@ using x509PubHandler = std::function<bool(X509* x509, std::string& pubHex)>;
 class Host : public std::enable_shared_from_this<Host>
 {
 public:
-    Host(){};
+    Host(std::shared_ptr<ASIOInterface> _asioInterface,
+        std::shared_ptr<SessionFactory> _sessionFactory, MessageFactory::Ptr _messageFactory)
+      : m_asioInterface(_asioInterface),
+        m_sessionFactory(_sessionFactory),
+        m_messageFactory(_messageFactory){};
     virtual ~Host() { stop(); };
 
     using Ptr = std::shared_ptr<Host>;
@@ -113,23 +117,8 @@ public:
     }
 
     virtual std::shared_ptr<ASIOInterface> asioInterface() const { return m_asioInterface; }
-    virtual void setASIOInterface(std::shared_ptr<ASIOInterface> asioInterface)
-    {
-        m_asioInterface = asioInterface;
-    }
-
     virtual std::shared_ptr<SessionFactory> sessionFactory() const { return m_sessionFactory; }
-    virtual void setSessionFactory(std::shared_ptr<SessionFactory> sessionFactory)
-    {
-        m_sessionFactory = sessionFactory;
-    }
-
     virtual MessageFactory::Ptr messageFactory() const { return m_messageFactory; }
-    virtual void setMessageFactory(MessageFactory::Ptr _messageFactory)
-    {
-        m_messageFactory = _messageFactory;
-    }
-
     virtual P2PInfo p2pInfo();
 
 private:

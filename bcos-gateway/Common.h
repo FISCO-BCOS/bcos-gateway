@@ -19,6 +19,7 @@
  */
 #pragma once
 #include <bcos-framework/interfaces/protocol/ServiceDesc.h>
+#include <bcos-framework/libutilities/Exceptions.h>
 #include <tarscpp/servant/Application.h>
 
 #define GATEWAY_LOG(LEVEL) BCOS_LOG(LEVEL) << "[Gateway][Gateway]"
@@ -31,6 +32,8 @@ namespace bcos
 {
 namespace gateway
 {
+DERIVE_BCOS_EXCEPTION(GatewayInitError);
+
 template <typename T, typename S, typename... Args>
 std::shared_ptr<T> createServiceClient(
     std::string const& _appName, std::string const& _serviceName, const Args&... _args)
