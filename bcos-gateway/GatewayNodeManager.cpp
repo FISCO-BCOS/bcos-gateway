@@ -76,7 +76,6 @@ bool GatewayNodeManager::registerFrontService(const std::string& _groupID,
 
 void GatewayNodeManager::updateFrontServiceInfo(bcos::group::GroupInfo::Ptr _groupInfo)
 {
-    NODE_MANAGER_LOG(INFO) << LOG_DESC("updateFrontServiceInfo") << printGroupInfo(_groupInfo);
     Guard l(x_frontServiceInfos);
     auto const& groupID = _groupInfo->groupID();
     // erase all the front service of the not-started group
@@ -107,7 +106,7 @@ void GatewayNodeManager::updateFrontServiceInfo(bcos::group::GroupInfo::Ptr _gro
             continue;
         }
         // the node is started
-        if (m_frontServiceInfos.count(nodeID))
+        if (m_frontServiceInfos.count(groupID) && m_frontServiceInfos[groupID].count(nodeID))
         {
             continue;
         }
@@ -116,7 +115,7 @@ void GatewayNodeManager::updateFrontServiceInfo(bcos::group::GroupInfo::Ptr _gro
             getApplicationName(_groupInfo->chainID(), _groupInfo->groupID(), nodeInfo->nodeName());
         auto frontService =
             createServiceClient<bcostars::FrontServiceClient, bcostars::FrontServicePrx>(
-                appName, FRONT_SERVICE_NAME, m_keyFactory);
+                appName, FRONT_SERVICE_NAME, FRONT_SERVANT_NAME, m_keyFactory);
         m_frontServiceInfos[groupID][nodeID] = frontService;
         NODE_MANAGER_LOG(INFO)
             << LOG_DESC("updateFrontServiceInfo: insert frontService for the started node")

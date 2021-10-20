@@ -32,13 +32,11 @@ namespace bcos
 {
 namespace gateway
 {
-DERIVE_BCOS_EXCEPTION(GatewayInitError);
-
 template <typename T, typename S, typename... Args>
-std::shared_ptr<T> createServiceClient(
-    std::string const& _appName, std::string const& _serviceName, const Args&... _args)
+std::shared_ptr<T> createServiceClient(std::string const& _appName, std::string const& _serviceName,
+    std::string const& _servantName, const Args&... _args)
 {
-    auto servantName = bcos::protocol::getPrxDesc(_appName, _serviceName);
+    auto servantName = bcos::protocol::getPrxDesc(_appName, _serviceName, _servantName);
     auto prx = Application::getCommunicator()->stringToProxy<S>(servantName);
     return std::make_shared<T>(prx, _args...);
 }
