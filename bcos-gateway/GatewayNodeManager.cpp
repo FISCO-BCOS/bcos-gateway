@@ -78,44 +78,26 @@ void GatewayNodeManager::updateFrontServiceInfo(bcos::group::GroupInfo::Ptr _gro
 {
     Guard l(x_frontServiceInfos);
     auto const& groupID = _groupInfo->groupID();
-    // erase all the front service of the not-started group
-    if (_groupInfo->status() != GroupStatus::Started)
-    {
-        m_frontServiceInfos.erase(groupID);
-        increaseSeq();
-        return;
-    }
-
     auto const& nodeInfos = _groupInfo->nodeInfos();
     for (auto const& it : nodeInfos)
     {
         // the node is not-started
         auto const& nodeInfo = it.second;
         auto const& nodeID = nodeInfo->nodeID();
-        if (nodeInfo->status() != GroupStatus::Started)
-        {
-            if (m_frontServiceInfos.count(groupID))
-            {
-                m_frontServiceInfos[groupID].erase(nodeID);
-                increaseSeq();
-                NODE_MANAGER_LOG(INFO)
-                    << LOG_DESC(
-                           "updateFrontServiceInfo: erase frontService of the not-started node")
-                    << printNodeInfo(nodeInfo);
-            }
-            continue;
-        }
         // the node is started
         if (m_frontServiceInfos.count(groupID) && m_frontServiceInfos[groupID].count(nodeID))
         {
             continue;
         }
         // createFrontService
-        auto appName =
-            getApplicationName(_groupInfo->chainID(), _groupInfo->groupID(), nodeInfo->nodeName());
+        auto serviceName = nodeInfo->serviceName(bcos::protocol::FRONT);
+        if (serviceName.size() == 0)
+        {
+            continue;
+        }
         auto frontService =
             createServiceClient<bcostars::FrontServiceClient, bcostars::FrontServicePrx>(
-                appName, FRONT_SERVICE_NAME, FRONT_SERVANT_NAME, m_keyFactory);
+                serviceName, FRONT_SERVANT_NAME, m_keyFactory);
         m_frontServiceInfos[groupID][nodeID] = frontService;
         NODE_MANAGER_LOG(INFO)
             << LOG_DESC("updateFrontServiceInfo: insert frontService for the started node")

@@ -73,47 +73,6 @@ void Gateway::stop()
     return;
 }
 
-// init the gateway
-void Gateway::init()
-{
-    GATEWAY_LOG(INFO) << LOG_DESC("Init gateway");
-    m_groupManager->asyncGetGroupList(
-        m_chainID, [this](Error::Ptr&& _error, std::set<std::string>&& _groupList) {
-            if (_error)
-            {
-                GATEWAY_LOG(ERROR)
-                    << LOG_DESC("Gateway init failed for getGroupList from GroupManager failed")
-                    << LOG_KV("code", _error->errorCode()) << LOG_KV("msg", _error->errorMessage());
-                return;
-            }
-            // get and update all groupInfos
-            GATEWAY_LOG(INFO)
-                << LOG_DESC("Gateway init: fetch groupList success, fetch group information now")
-                << LOG_KV("groupSize", _groupList.size());
-            if (_groupList.size() == 0)
-            {
-                return;
-            }
-            std::vector<std::string> groupList(_groupList.begin(), _groupList.end());
-            m_groupManager->asyncGetGroupInfos(m_chainID, groupList,
-                [this](Error::Ptr&& _error, std::vector<GroupInfo::Ptr>&& _groupInfos) {
-                    if (_error)
-                    {
-                        GATEWAY_LOG(ERROR)
-                            << LOG_DESC("Gateway init failed for get group informations failed")
-                            << LOG_KV("code", _error->errorCode())
-                            << LOG_KV("msg", _error->errorMessage());
-                        return;
-                    }
-                    GATEWAY_LOG(INFO) << LOG_DESC("Gateway init: fetch group information succcess");
-                    for (auto const& groupInfo : _groupInfos)
-                    {
-                        m_gatewayNodeManager->updateFrontServiceInfo(groupInfo);
-                    }
-                });
-        });
-}
-
 std::shared_ptr<P2PMessage> Gateway::newP2PMessage(const std::string& _groupID,
     bcos::crypto::NodeIDPtr _srcNodeID, bcos::crypto::NodeIDPtr _dstNodeID, bytesConstRef _payload)
 {

@@ -22,7 +22,6 @@
 
 #include <bcos-framework/interfaces/front/FrontServiceInterface.h>
 #include <bcos-framework/interfaces/gateway/GatewayInterface.h>
-#include <bcos-framework/interfaces/multigroup/GroupManagerInterface.h>
 #include <bcos-gateway/Common.h>
 #include <bcos-gateway/GatewayNodeManager.h>
 #include <bcos-gateway/libp2p/Service.h>
@@ -38,18 +37,15 @@ public:
 
 public:
     Gateway(std::string const& _chainID, P2PInterface::Ptr _p2pInterface,
-        GatewayNodeManager::Ptr _gatewayNodeManager,
-        bcos::group::GroupManagerInterface::Ptr _groupManager)
+        GatewayNodeManager::Ptr _gatewayNodeManager)
       : m_chainID(_chainID),
         m_p2pInterface(_p2pInterface),
-        m_gatewayNodeManager(_gatewayNodeManager),
-        m_groupManager(_groupManager)
+        m_gatewayNodeManager(_gatewayNodeManager)
     {}
     virtual ~Gateway() { stop(); }
 
     void start() override;
     void stop() override;
-    virtual void init();
 
     /**
      * @brief: get connected peers
@@ -166,7 +162,6 @@ private:
     P2PInterface::Ptr m_p2pInterface;
     // GatewayNodeManager
     GatewayNodeManager::Ptr m_gatewayNodeManager;
-    bcos::group::GroupManagerInterface::Ptr m_groupManager;
 };
 }  // namespace gateway
 }  // namespace bcos

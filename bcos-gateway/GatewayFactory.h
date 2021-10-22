@@ -23,7 +23,6 @@
 
 #include <bcos-framework/interfaces/crypto/KeyFactory.h>
 #include <bcos-framework/interfaces/front/FrontServiceInterface.h>
-#include <bcos-framework/interfaces/multigroup/GroupManagerInterface.h>
 #include <bcos-gateway/Gateway.h>
 #include <bcos-gateway/GatewayConfig.h>
 #include <boost/asio/ssl.hpp>
@@ -37,9 +36,7 @@ class GatewayFactory
 public:
     using Ptr = std::shared_ptr<GatewayFactory>;
 
-    GatewayFactory(
-        std::string const& _chainID, bcos::group::GroupManagerInterface::Ptr _groupManager)
-      : m_chainID(_chainID), m_groupManager(_groupManager)
+    GatewayFactory(std::string const& _chainID) : m_chainID(_chainID)
     {
         initCert2PubHexHandler();
         initSSLContextPubHexHandler();
@@ -89,7 +86,6 @@ private:
 
 private:
     std::string m_chainID;
-    bcos::group::GroupManagerInterface::Ptr m_groupManager;
 };
 }  // namespace gateway
 }  // namespace bcos
