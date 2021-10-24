@@ -22,17 +22,54 @@
 #include <bcos-framework/interfaces/crypto/KeyFactory.h>
 #include <bcos-framework/interfaces/front/FrontServiceInterface.h>
 #include <bcos-framework/interfaces/gateway/GatewayInterface.h>
+#include <bcos-framework/libutilities/Timer.h>
 #include <bcos-gateway/Common.h>
 #include <bcos-gateway/libnetwork/Common.h>
+#include <bcos-tars-protocol/client/FrontServiceClient.h>
 namespace bcos
 {
 namespace gateway
 {
+class FrontServiceInfo
+{
+public:
+    using Ptr = std::shared_ptr<FrontServiceInfo>;
+    FrontServiceInfo(bcos::front::FrontServiceInterface::Ptr _frontService,
+        bcostars::FrontServicePrx _frontServicePrx)
+      : m_frontService(_frontService), m_frontServicePrx(_frontServicePrx)
+    {}
+
+
+    bcos::front::FrontServiceInterface::Ptr frontService() { return m_frontService; }
+    bcostars::FrontServicePrx frontServicePrx() { return m_frontServicePrx; }
+
+    bool unreachable()
+    {
+        if (!m_frontServicePrx)
+        {
+            return false;
+        }
+        vector<EndpointInfo> activeEndPoints;
+        vector<EndpointInfo> nactiveEndPoints;
+        m_frontServicePrx->tars_endpointsAll(activeEndPoints, nactiveEndPoints);
+        return (activeEndPoints.size() == 0);
+    }
+
+private:
+    bcos::front::FrontServiceInterface::Ptr m_frontService;
+    bcostars::FrontServicePrx m_frontServicePrx;
+};
+
 class GatewayNodeManager
 {
 public:
     using Ptr = std::shared_ptr<GatewayNodeManager>;
-    GatewayNodeManager() = default;
+    GatewayNodeManager()
+    {
+        m_frontServiceInfoUpdater = std::make_shared<Timer>(1000, "frontServiceUpdater");
+        m_frontServiceInfoUpdater->registerTimeoutHandler([this]() { updateFrontServiceInfo(); });
+        m_frontServiceInfoUpdater->start();
+    }
     virtual ~GatewayNodeManager() {}
 
     uint32_t statusSeq() { return m_statusSeq; }
@@ -84,9 +121,10 @@ public:
 
     virtual void updateFrontServiceInfo(bcos::group::GroupInfo::Ptr _groupInfo);
 
+    virtual void updateFrontServiceInfo();
+
 public:
-    const std::unordered_map<std::string,
-        std::unordered_map<std::string, bcos::front::FrontServiceInterface::Ptr>>&
+    const std::unordered_map<std::string, std::unordered_map<std::string, FrontServiceInfo::Ptr>>&
     frontServiceInfos() const
     {
         return m_frontServiceInfos;
@@ -111,11 +149,11 @@ private:
     // P2pID => statusSeq
     std::unordered_map<std::string, uint32_t> m_p2pID2Seq;
     // lock m_groupID2FrontServiceInterface
-    mutable std::mutex x_frontServiceInfos;
+    mutable SharedMutex x_frontServiceInfos;
     // groupID => nodeID => FrontServiceInterface
-    std::unordered_map<std::string,
-        std::unordered_map<std::string, bcos::front::FrontServiceInterface::Ptr>>
+    std::unordered_map<std::string, std::unordered_map<std::string, FrontServiceInfo::Ptr>>
         m_frontServiceInfos;
+    std::shared_ptr<Timer> m_frontServiceInfoUpdater;
 };
 }  // namespace gateway
 }  // namespace bcos

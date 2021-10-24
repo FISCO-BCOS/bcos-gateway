@@ -33,12 +33,12 @@ namespace bcos
 namespace gateway
 {
 template <typename T, typename S, typename... Args>
-std::shared_ptr<T> createServiceClient(
+std::pair<std::shared_ptr<T>, S> createServiceClient(
     std::string const& _serviceName, std::string const& _servantName, const Args&... _args)
 {
     auto servantName = bcos::protocol::getPrxDesc(_serviceName, _servantName);
     auto prx = Application::getCommunicator()->stringToProxy<S>(servantName);
-    return std::make_shared<T>(prx, _args...);
+    return std::make_pair(std::make_shared<T>(prx, _args...), prx);
 }
 }  // namespace gateway
 }  // namespace bcos
