@@ -303,8 +303,7 @@ std::shared_ptr<Gateway> GatewayFactory::buildGateway(GatewayConfig::Ptr _config
         gatewayNodeManager->setKeyFactory(keyFactory);
 
         // init Gateway
-        auto gateway =
-            std::make_shared<Gateway>(m_chainID, service, gatewayNodeManager, m_groupManager);
+        auto gateway = std::make_shared<Gateway>(m_chainID, service, gatewayNodeManager);
         auto weakptrGatewayNodeManager = std::weak_ptr<GatewayNodeManager>(gatewayNodeManager);
         service->setGateway(std::weak_ptr<Gateway>(gateway));
         // register disconnect handler
