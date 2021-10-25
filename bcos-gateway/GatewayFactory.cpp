@@ -299,7 +299,7 @@ std::shared_ptr<Gateway> GatewayFactory::buildGateway(GatewayConfig::Ptr _config
         service->setKeyFactory(keyFactory);
 
         // init GatewayNodeManager
-        auto gatewayNodeManager = std::make_shared<GatewayNodeManager>();
+        auto gatewayNodeManager = std::make_shared<GatewayNodeManager>(pubHex);
         gatewayNodeManager->setKeyFactory(keyFactory);
 
         // init Gateway

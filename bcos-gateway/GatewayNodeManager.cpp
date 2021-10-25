@@ -104,7 +104,7 @@ void GatewayNodeManager::updateFrontServiceInfo()
 
 void GatewayNodeManager::updateFrontServiceInfo(bcos::group::GroupInfo::Ptr _groupInfo)
 {
-    WriteGuard l(x_frontServiceInfos);
+    UpgradableGuard l(x_frontServiceInfos);
     auto const& groupID = _groupInfo->groupID();
     auto const& nodeInfos = _groupInfo->nodeInfos();
     for (auto const& it : nodeInfos)
@@ -126,10 +126,12 @@ void GatewayNodeManager::updateFrontServiceInfo(bcos::group::GroupInfo::Ptr _gro
         auto frontService =
             createServiceClient<bcostars::FrontServiceClient, bcostars::FrontServicePrx>(
                 serviceName, FRONT_SERVANT_NAME, m_keyFactory);
+        UpgradeGuard ul(l);
         m_frontServiceInfos[groupID][nodeID] =
             std::make_shared<FrontServiceInfo>(frontService.first, frontService.second);
         NODE_MANAGER_LOG(INFO)
             << LOG_DESC("updateFrontServiceInfo: insert frontService for the started node")
+            << LOG_KV("nodeId", nodeInfo->nodeID()) << LOG_KV("serviceName", serviceName)
             << printNodeInfo(nodeInfo);
         increaseSeq();
     }
@@ -589,4 +591,26 @@ bool GatewayNodeManager::queryNodeIDsByGroupID(
     }
 
     return true;
+}
+
+FrontServiceInfo::Ptr GatewayNodeManager::queryLocalNodes(
+    std::string const& _groupID, std::string const& _nodeID)
+{
+    ReadGuard l(x_frontServiceInfos);
+    if (m_frontServiceInfos.count(_groupID) && m_frontServiceInfos[_groupID].count(_nodeID))
+    {
+        return m_frontServiceInfos[_groupID][_nodeID];
+    }
+    return nullptr;
+}
+
+std::unordered_map<std::string, FrontServiceInfo::Ptr> GatewayNodeManager::groupFrontServices(
+    std::string const& _groupID)
+{
+    ReadGuard l(x_frontServiceInfos);
+    if (!m_frontServiceInfos.count(_groupID))
+    {
+        return std::unordered_map<std::string, FrontServiceInfo::Ptr>();
+    }
+    return m_frontServiceInfos[_groupID];
 }
