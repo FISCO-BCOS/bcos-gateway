@@ -64,7 +64,7 @@ class GatewayNodeManager
 {
 public:
     using Ptr = std::shared_ptr<GatewayNodeManager>;
-    GatewayNodeManager()
+    GatewayNodeManager(P2pID const& _nodeID) : m_p2pNodeID(_nodeID)
     {
         m_frontServiceInfoUpdater = std::make_shared<Timer>(1000, "frontServiceUpdater");
         m_frontServiceInfoUpdater->registerTimeoutHandler([this]() { updateFrontServiceInfo(); });
@@ -123,7 +123,6 @@ public:
 
     virtual void updateFrontServiceInfo();
 
-public:
     const std::unordered_map<std::string, std::unordered_map<std::string, FrontServiceInfo::Ptr>>&
     frontServiceInfos() const
     {
@@ -137,7 +136,12 @@ public:
         m_keyFactory = _keyFactory;
     }
 
+    FrontServiceInfo::Ptr queryLocalNodes(std::string const& _groupID, std::string const& _nodeID);
+    std::unordered_map<std::string, FrontServiceInfo::Ptr> groupFrontServices(
+        std::string const& _groupID);
+
 private:
+    P2pID m_p2pNodeID;
     std::shared_ptr<bcos::crypto::KeyFactory> m_keyFactory;
     // statusSeq
     std::atomic<uint32_t> m_statusSeq{1};

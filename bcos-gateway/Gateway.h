@@ -156,6 +156,12 @@ public:
     void asyncNotifyGroupInfo(
         bcos::group::GroupInfo::Ptr, std::function<void(Error::Ptr&&)>) override;
 
+protected:
+    bool trySendLocalMessage(const std::string& _groupID, bcos::crypto::NodeIDPtr _srcNodeID,
+        bcos::crypto::NodeIDPtr _dstNodeID, bytesConstRef _payload, ErrorRespFunc _errorRespFunc);
+    bool asyncBroadcastMessageToLocalNodes(
+        const std::string& _groupID, bcos::crypto::NodeIDPtr _srcNodeID, bytesConstRef _payload);
+
 private:
     std::string m_chainID;
     // p2p service interface

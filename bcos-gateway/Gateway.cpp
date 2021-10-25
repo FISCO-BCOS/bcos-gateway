@@ -178,6 +178,26 @@ bool Gateway::unregisterFrontService(const std::string& _groupID, bcos::crypto::
     return m_gatewayNodeManager->unregisterFrontService(_groupID, _nodeID);
 }
 
+
+// send message to the local nodes
+bool Gateway::trySendLocalMessage(const std::string& _groupID, bcos::crypto::NodeIDPtr _srcNodeID,
+    bcos::crypto::NodeIDPtr _dstNodeID, bytesConstRef _payload, ErrorRespFunc _errorRespFunc)
+{
+    auto frontServiceInfo = m_gatewayNodeManager->queryLocalNodes(_groupID, _dstNodeID->hex());
+    if (!frontServiceInfo)
+    {
+        return false;
+    }
+    frontServiceInfo->frontService()->onReceiveMessage(
+        _groupID, _srcNodeID, _payload, [_errorRespFunc](Error::Ptr _error) {
+            if (_errorRespFunc)
+            {
+                _errorRespFunc(_error);
+            }
+        });
+    return true;
+}
+
 /**
  * @brief: send message
  * @param _groupID: groupID
@@ -194,6 +214,10 @@ void Gateway::asyncSendMessageByNodeID(const std::string& _groupID,
     std::set<P2pID> p2pIDs;
     if (!m_gatewayNodeManager->queryP2pIDs(_groupID, _dstNodeID->hex(), p2pIDs))
     {
+        if (trySendLocalMessage(_groupID, _srcNodeID, _dstNodeID, _payload, _errorRespFunc))
+        {
+            return;
+        }
         GATEWAY_LOG(ERROR) << LOG_DESC("could not find a gateway to send this message")
                            << LOG_KV("groupID", _groupID) << LOG_KV("srcNodeID", _srcNodeID->hex())
                            << LOG_KV("dstNodeID", _dstNodeID->hex());
@@ -351,6 +375,33 @@ void Gateway::asyncSendMessageByNodeIDs(const std::string& _groupID,
     }
 }
 
+
+bool Gateway::asyncBroadcastMessageToLocalNodes(
+    const std::string& _groupID, bcos::crypto::NodeIDPtr _srcNodeID, bytesConstRef _payload)
+{
+    auto frontServiceInfos = m_gatewayNodeManager->groupFrontServices(_groupID);
+    if (frontServiceInfos.size() == 0)
+    {
+        return false;
+    }
+    for (auto const& it : frontServiceInfos)
+    {
+        auto frontService = it.second->frontService();
+        auto dstNodeID = it.first;
+        frontService->onReceiveMessage(
+            _groupID, _srcNodeID, _payload, [_srcNodeID, dstNodeID](Error::Ptr _error) {
+                if (_error)
+                {
+                    GATEWAY_LOG(ERROR)
+                        << LOG_DESC("asyncBroadcastMessageToLocalNodes error")
+                        << LOG_KV("src", _srcNodeID->hex()) << LOG_KV("dst", dstNodeID)
+                        << LOG_KV("code", _error->errorCode())
+                        << LOG_KV("msg", _error->errorMessage());
+                }
+            });
+    }
+    return true;
+}
 /**
  * @brief: send message to all nodes
  * @param _groupID: groupID
@@ -362,12 +413,17 @@ void Gateway::asyncSendBroadcastMessage(
     const std::string& _groupID, bcos::crypto::NodeIDPtr _srcNodeID, bytesConstRef _payload)
 {
     std::set<P2pID> p2pIDs;
+    auto ret = asyncBroadcastMessageToLocalNodes(_groupID, _srcNodeID, _payload);
     if (!m_gatewayNodeManager->queryP2pIDsByGroupID(_groupID, p2pIDs))
     {
-        GATEWAY_LOG(ERROR) << LOG_DESC(
-                                  "could not find a gateway "
-                                  "to send this broadcast message")
-                           << LOG_KV("groupID", _groupID) << LOG_KV("srcNodeID", _srcNodeID->hex());
+        if (!ret)
+        {
+            GATEWAY_LOG(ERROR) << LOG_DESC(
+                                      "could not find a gateway "
+                                      "to send this broadcast message")
+                               << LOG_KV("groupID", _groupID)
+                               << LOG_KV("srcNodeID", _srcNodeID->hex());
+        }
         return;
     }
 
