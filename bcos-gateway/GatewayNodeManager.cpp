@@ -76,6 +76,11 @@ bool GatewayNodeManager::registerFrontService(const std::string& _groupID,
 
 void GatewayNodeManager::updateFrontServiceInfo()
 {
+    m_frontServiceInfoUpdater->restart();
+    if (utcTime() - m_startT < c_tarsAdminRefreshInitTime)
+    {
+        return;
+    }
     UpgradableGuard l(x_frontServiceInfos);
     for (auto pnodesInfo = m_frontServiceInfos.begin(); pnodesInfo != m_frontServiceInfos.end();)
     {
@@ -99,7 +104,6 @@ void GatewayNodeManager::updateFrontServiceInfo()
         }
         pnodesInfo++;
     }
-    m_frontServiceInfoUpdater->restart();
 }
 
 void GatewayNodeManager::updateFrontServiceInfo(bcos::group::GroupInfo::Ptr _groupInfo)

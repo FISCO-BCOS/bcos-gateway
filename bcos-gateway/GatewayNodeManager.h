@@ -69,6 +69,7 @@ public:
         m_frontServiceInfoUpdater = std::make_shared<Timer>(1000, "frontServiceUpdater");
         m_frontServiceInfoUpdater->registerTimeoutHandler([this]() { updateFrontServiceInfo(); });
         m_frontServiceInfoUpdater->start();
+        m_startT = utcTime();
     }
     virtual ~GatewayNodeManager() {}
 
@@ -158,6 +159,10 @@ private:
     std::unordered_map<std::string, std::unordered_map<std::string, FrontServiceInfo::Ptr>>
         m_frontServiceInfos;
     std::shared_ptr<Timer> m_frontServiceInfoUpdater;
+
+
+    uint64_t m_startT;
+    uint64_t c_tarsAdminRefreshInitTime = 120 * 1000;
 };
 }  // namespace gateway
 }  // namespace bcos
