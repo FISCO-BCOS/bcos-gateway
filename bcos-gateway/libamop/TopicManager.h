@@ -79,7 +79,7 @@ public:
      * @param _clientID: client identify, to be defined
      * @return void
      */
-    void removeTopicsByClient(const std::string& _client);
+    void removeTopics(const std::string& _client, std::vector<std::string> const& _topicList);
     /**
      * @brief: query topics subscribed by all connected clients
      * @return json string result, include topicSeq and topicItems fields
@@ -161,7 +161,6 @@ private:
     mutable std::shared_mutex x_clientTopics;
     // client => TopicItems
     std::unordered_map<std::string, TopicItems> m_client2TopicItems;
-
 
     // topicSeq
     std::atomic<uint32_t> m_topicSeq{1};

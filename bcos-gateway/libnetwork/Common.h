@@ -129,7 +129,7 @@ public:
     NetworkException(int _errorCode, const std::string& _msg)
       : m_errorCode(_errorCode), m_msg(_msg){};
 
-    virtual int errorCode() { return m_errorCode; };
+    virtual int errorCode() const { return m_errorCode; };
     virtual const char* what() const noexcept override { return m_msg.c_str(); };
     bool operator!() const { return m_errorCode == 0; }
 

@@ -35,11 +35,21 @@ namespace amop
 class AMOP
 {
 public:
-    AMOP();
+    AMOP(TopicManager::Ptr _topicManager, MessageFactory::Ptr _messageFactory,
+        AMOPRequestFactory::Ptr _requestFactory, bcos::gateway::P2PInterface::Ptr _network,
+        bcos::gateway::P2pID const& _p2pNodeID);
     virtual ~AMOP() {}
 
     virtual void start();
     virtual void stop();
+    virtual void asyncRegisterClient(std::string const& _clientID,
+        std::string const& _clientEndPoint, std::function<void(Error::Ptr&&)> _callback);
+
+    virtual void asyncSubscribeTopic(std::string const& _clientID, std::string const& _topicInfo,
+        std::function<void(Error::Ptr&&)> _callback);
+    virtual void asyncRemoveTopic(std::string const& _clientID,
+        std::vector<std::string> const& _topicList, std::function<void(Error::Ptr&&)> _callback);
+
     /**
      * @brief: async send message to random node subscribe _topic
      * @param _topic: topic
@@ -59,7 +69,14 @@ public:
     virtual void asyncSendBroadbastMessageByTopic(
         const std::string& _topic, bcos::bytesConstRef _data);
 
+    virtual void onAMOPMessage(bcos::gateway::NetworkException const& _e,
+        bcos::gateway::P2PSession::Ptr _session,
+        std::shared_ptr<bcos::gateway::P2PMessage> _message);
+
 protected:
+    virtual void dispatcherAMOPMessage(bcos::gateway::NetworkException const& _e,
+        bcos::gateway::P2PSession::Ptr _session,
+        std::shared_ptr<bcos::gateway::P2PMessage> _message);
     /**
      * @brief: periodically send topicSeq to all other nodes
      * @return void

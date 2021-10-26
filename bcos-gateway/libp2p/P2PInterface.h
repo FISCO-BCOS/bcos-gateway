@@ -101,6 +101,10 @@ public:
      */
     virtual void asyncSendMessageByP2PNodeIDs(int16_t _type, const std::vector<P2pID>& _nodeIDs,
         bytesConstRef _payload, Options _options) = 0;
+
+    using MessageHandler =
+        std::function<void(NetworkException, std::shared_ptr<P2PSession>, P2PMessage::Ptr)>;
+    virtual void registerHandlerByMsgType(int16_t _type, MessageHandler const& _msgHandler) = 0;
 };
 
 }  // namespace gateway
