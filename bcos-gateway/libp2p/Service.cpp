@@ -609,3 +609,56 @@ uint32_t Service::statusSeq()
 
     return 0;
 }
+
+std::shared_ptr<P2PMessage> Service::newP2PMessage(int16_t _type, bytesConstRef _payload)
+{
+    auto message = std::static_pointer_cast<P2PMessage>(messageFactory()->buildMessage());
+
+    message->setPacketType(_type);
+    message->setSeq(messageFactory()->newSeq());
+    message->setPayload(std::make_shared<bytes>(_payload.begin(), _payload.end()));
+    return message;
+}
+
+void Service::asyncSendMessageByP2PNodeID(int16_t _type, P2pID _dstNodeID, bytesConstRef _payload,
+    Options _options, P2PResponseCallback _callback)
+{
+    auto p2pMessage = newP2PMessage(_type, _payload);
+    asyncSendMessageByNodeID(
+        _dstNodeID, p2pMessage,
+        [_dstNodeID, _callback](NetworkException _e, std::shared_ptr<P2PSession>,
+            std::shared_ptr<P2PMessage> _p2pMessage) {
+            if (_e.errorCode() != 0)
+            {
+                GATEWAY_LOG(WARNING) << LOG_DESC("asyncSendMessageByP2PNodeID error")
+                                     << LOG_KV("code", _e.errorCode()) << LOG_KV("msg", _e.what())
+                                     << LOG_KV("dst", _dstNodeID);
+                if (_callback)
+                {
+                    _callback(_e.toError(), nullptr);
+                }
+                return;
+            }
+            if (_callback)
+            {
+                _callback(nullptr, _p2pMessage->payload());
+            }
+        },
+        _options);
+}
+
+void Service::asyncBroadcastMessageToP2PNodes(
+    int16_t _type, bytesConstRef _payload, Options _options)
+{
+    auto p2pMessage = newP2PMessage(_type, _payload);
+    asyncBroadcastMessage(p2pMessage, _options);
+}
+
+void Service::asyncSendMessageByP2PNodeIDs(
+    int16_t _type, const std::vector<P2pID>& _nodeIDs, bytesConstRef _payload, Options _options)
+{
+    for (auto const& nodeID : _nodeIDs)
+    {
+        asyncSendMessageByP2PNodeID(_type, nodeID, _payload, _options, nullptr);
+    }
+}

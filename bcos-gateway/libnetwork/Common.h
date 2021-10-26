@@ -32,6 +32,7 @@
 
 #include <bcos-framework/interfaces/crypto/KeyInterface.h>
 #include <bcos-framework/libutilities/Common.h>
+#include <bcos-framework/libutilities/Error.h>
 #include <bcos-framework/libutilities/Exceptions.h>
 
 namespace ba = boost::asio;
@@ -44,6 +45,28 @@ namespace bcos
 {
 namespace gateway
 {
+// Message type definition
+enum MessageType : int16_t
+{
+    Heartbeat = 0x1,
+    Handshake = 0x2,
+    RequestNodeIDs = 0x3,
+    ResponseNodeIDs = 0x4,
+    PeerToPeerMessage = 0x5,
+    BroadcastMessage = 0x6,
+    AMOPMessage = 0x7,
+};
+
+enum MessageExtFieldFlag
+{
+    Response = 0x0001,
+};
+
+enum MessageDecodeStatus
+{
+    MESSAGE_ERROR = -1,
+    MESSAGE_INCOMPLETE = 0,
+};
 enum DisconnectReason
 {
     DisconnectRequested = 0,
@@ -109,6 +132,8 @@ public:
     virtual int errorCode() { return m_errorCode; };
     virtual const char* what() const noexcept override { return m_msg.c_str(); };
     bool operator!() const { return m_errorCode == 0; }
+
+    virtual Error::Ptr toError() { return std::make_shared<Error>(errorCode(), m_msg); }
 
 private:
     int m_errorCode = 0;

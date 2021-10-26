@@ -28,28 +28,6 @@ namespace bcos
 {
 namespace gateway
 {
-// Message type definition
-enum MessageType
-{
-    Heartbeat = 0x1,
-    Handshake = 0x2,
-    RequestNodeIDs = 0x3,
-    ResponseNodeIDs = 0x4,
-    PeerToPeerMessage = 0x5,
-    BroadcastMessage = 0x6
-};
-
-enum MessageExtFieldFlag
-{
-    Response = 0x0001,
-};
-
-enum MessageDecodeStatus
-{
-    MESSAGE_ERROR = -1,
-    MESSAGE_INCOMPLETE = 0,
-};
-
 /// Options format definition
 ///   options(default version):
 ///       groupID length    :1 bytes
