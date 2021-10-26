@@ -33,20 +33,19 @@ public:
         RequestTopic = 0x2,
         ResponseTopic = 0x3,
         AMOPRequest = 0x4,
+        AMOPResponse = 0x5,
         AMOPBroadcast = 0x5
     };
-
-public:
-    using Ptr = std::shared_ptr<AMOPMessage>;
-
     /// type(2) + data
     const static size_t HEADER_LENGTH = 2;
     /// the max length of topic(65535)
     const static size_t MAX_TOPIC_LENGTH = 0xffff;
 
 public:
-    AMOPMessage() { m_data = bytesConstRef(); }
+    using Ptr = std::shared_ptr<AMOPMessage>;
+    AMOPMessage() {}
     AMOPMessage(bytesConstRef _data) { decode(_data); }
+    virtual ~AMOPMessage() {}
 
 public:
     uint16_t type() const { return m_type; }
@@ -54,6 +53,7 @@ public:
 
     bytesConstRef data() const { return m_data; }
     void setData(bcos::bytesConstRef _data) { m_data = _data; }
+    virtual void setStatus(uint16_t _status) { m_status = _status; }
 
 public:
     bool encode(bytes& _buffer);
@@ -61,7 +61,8 @@ public:
 
 private:
     uint16_t m_type{0};
-    bcos::bytesConstRef m_data;
+    uint16_t m_status{0};
+    bcos::bytesConstRef m_data = bytesConstRef();
 };
 class MessageFactory
 {

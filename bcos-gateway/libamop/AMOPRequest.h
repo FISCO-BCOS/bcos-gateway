@@ -27,13 +27,15 @@ namespace amop
 class AMOPRequest
 {
 public:
+    using Ptr = std::shared_ptr<AMOPRequest>;
+    AMOPRequest() = default;
+    AMOPRequest(bytesConstRef _data) { decode(_data); }
     virtual ~AMOPRequest() {}
 
     // topic field length
     const static size_t TOPIC_MAX_LENGTH = 65535;
     const static size_t MESSAGE_MIN_LENGTH = 2;
-    AMOPRequest() { m_data = bytesConstRef(); }
-    using Ptr = std::shared_ptr<AMOPRequest>;
+
 
 public:
     std::string topic() const { return m_topic; }
@@ -47,7 +49,7 @@ public:
 
 private:
     std::string m_topic;
-    bytesConstRef m_data;
+    bytesConstRef m_data = bytesConstRef();
 };
 
 class AMOPRequestFactory
@@ -56,10 +58,10 @@ public:
     using Ptr = std::shared_ptr<AMOPRequestFactory>;
 
 public:
-    std::shared_ptr<AMOPRequest> buildRequest()
+    std::shared_ptr<AMOPRequest> buildRequest() { return std::make_shared<AMOPRequest>(); }
+    std::shared_ptr<AMOPRequest> buildRequest(bytesConstRef _data)
     {
-        auto msg = std::make_shared<AMOPRequest>();
-        return msg;
+        return std::make_shared<AMOPRequest>(_data);
     }
 };
 

@@ -18,14 +18,14 @@
  * @date 2021-06-21
  */
 #pragma once
+#include <bcos-gateway/libnetwork/Common.h>
 #include <chrono>
+#include <ctime>
 #include <memory>
+#include <random>
 #include <set>
 #include <string>
 #include <vector>
-#include <ctime>
-#include <random>
-#include <bcos-gateway/libnetwork/Common.h>
 
 #define TOPIC_LOG(LEVEL) BCOS_LOG(LEVEL) << "[AMOP][TOPIC]"
 #define AMOP_MSG_LOG(LEVEL) BCOS_LOG(LEVEL) << "[AMOP][MSG]"
@@ -34,18 +34,6 @@ namespace bcos
 {
 namespace amop
 {
-enum MessageType
-{
-    // ------------AMOP begin ---------
-
-    AMOP_SUBTOPIC = 0x110,   // 272
-    AMOP_REQUEST = 0x111,    // 273
-    AMOP_BROADCAST = 0x112,  // 274
-    AMOP_RESPONSE = 0x113    // 275
-
-    // ------------AMOP end ---------
-
-};
 class TopicItem
 {
 public:

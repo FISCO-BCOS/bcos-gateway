@@ -54,7 +54,7 @@ enum MessageType : int16_t
     ResponseNodeIDs = 0x4,
     PeerToPeerMessage = 0x5,
     BroadcastMessage = 0x6,
-    AMOPMessage = 0x7,
+    AMOPMessageType = 0x7,
 };
 
 enum MessageExtFieldFlag
