@@ -126,6 +126,18 @@ public:
 
     uint32_t statusSeq();
 
+    void asyncSendMessageByP2PNodeID(int16_t _type, P2pID _dstNodeID, bytesConstRef _payload,
+        Options options, P2PResponseCallback _callback) override;
+
+    void asyncBroadcastMessageToP2PNodes(
+        int16_t _type, bytesConstRef _payload, Options _options) override;
+
+    void asyncSendMessageByP2PNodeIDs(int16_t _type, const std::vector<P2pID>& _nodeIDs,
+        bytesConstRef _payload, Options _options) override;
+
+private:
+    std::shared_ptr<P2PMessage> newP2PMessage(int16_t _type, bytesConstRef _payload);
+
 private:
     std::vector<std::function<void(NetworkException, P2PSession::Ptr)>> m_disconnectionHandlers;
 

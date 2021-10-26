@@ -44,7 +44,7 @@ using CallbackFuncWithSession =
     std::function<void(NetworkException, std::shared_ptr<P2PSession>, std::shared_ptr<P2PMessage>)>;
 using DisconnectCallbackFuncWithSession =
     std::function<void(NetworkException, std::shared_ptr<P2PSession>)>;
-
+using P2PResponseCallback = std::function<void(Error::Ptr&& _error, std::shared_ptr<bytes> _data)>;
 class P2PInterface
 {
 public:
@@ -73,6 +73,34 @@ public:
     virtual std::shared_ptr<MessageFactory> messageFactory() = 0;
 
     virtual std::shared_ptr<P2PSession> getP2PSessionByNodeId(P2pID const& _nodeID) = 0;
+
+
+    /**
+     * @brief send message to the given p2p nodes
+     *
+     * @param _type the message type
+     * @param _dstNodeID the dst node
+     * @param _payload the data
+     * @param options timeout option
+     * @param _callback called when receive response
+     */
+    virtual void asyncSendMessageByP2PNodeID(int16_t _type, P2pID _dstNodeID,
+        bytesConstRef _payload, Options options, P2PResponseCallback _callback) = 0;
+
+    /**
+     * @brief broadcast message to all p2p nodes
+     *
+     * @param _type the message type
+     * @param _payload the payload
+     */
+    virtual void asyncBroadcastMessageToP2PNodes(
+        int16_t _type, bytesConstRef _payload, Options _options) = 0;
+
+    /**
+     * @brief send message to the given nodeIDs
+     */
+    virtual void asyncSendMessageByP2PNodeIDs(int16_t _type, const std::vector<P2pID>& _nodeIDs,
+        bytesConstRef _payload, Options _options) = 0;
 };
 
 }  // namespace gateway

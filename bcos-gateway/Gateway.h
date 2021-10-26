@@ -34,8 +34,6 @@ class Gateway : public GatewayInterface, public std::enable_shared_from_this<Gat
 {
 public:
     using Ptr = std::shared_ptr<Gateway>;
-
-public:
     Gateway(std::string const& _chainID, P2PInterface::Ptr _p2pInterface,
         GatewayNodeManager::Ptr _gatewayNodeManager)
       : m_chainID(_chainID),
