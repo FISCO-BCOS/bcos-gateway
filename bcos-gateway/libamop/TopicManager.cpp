@@ -154,7 +154,7 @@ void TopicManager::removeTopics(
         }
         incTopicSeq();
     }
-    TOPIC_LOG(INFO) << LOG_BADGE("removeTopicsByClient") << LOG_KV("client", _client)
+    TOPIC_LOG(INFO) << LOG_BADGE("removeTopics") << LOG_KV("client", _client)
                     << LOG_KV("topicSeq", topicSeq());
 }
 

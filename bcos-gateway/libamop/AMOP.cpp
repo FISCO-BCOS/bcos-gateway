@@ -449,7 +449,6 @@ void AMOP::asyncSubscribeTopic(std::string const& _clientID, std::string const& 
 void AMOP::asyncRemoveTopic(std::string const& _clientID,
     std::vector<std::string> const& _topicList, std::function<void(Error::Ptr&&)> _callback)
 {
-    //  void removeTopicsByClient(const std::string& _client);
     m_topicManager->removeTopics(_clientID, _topicList);
     if (!_callback)
     {
