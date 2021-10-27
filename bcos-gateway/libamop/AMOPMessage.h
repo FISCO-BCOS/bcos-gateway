@@ -37,7 +37,7 @@ public:
         AMOPBroadcast = 0x5
     };
     /// type(2) + data
-    const static size_t HEADER_LENGTH = 2;
+    const static size_t HEADER_LENGTH = 4;
     /// the max length of topic(65535)
     const static size_t MAX_TOPIC_LENGTH = 0xffff;
 

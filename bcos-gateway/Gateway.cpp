@@ -32,12 +32,17 @@ using namespace bcos;
 using namespace bcos::protocol;
 using namespace bcos::gateway;
 using namespace bcos::group;
+using namespace bcos::amop;
 
 void Gateway::start()
 {
     if (m_p2pInterface)
     {
         m_p2pInterface->start();
+    }
+    if (m_amop)
+    {
+        m_amop->start();
     }
 
     const auto& frontServiceInfos = m_gatewayNodeManager->frontServiceInfos();
@@ -68,7 +73,10 @@ void Gateway::stop()
     {
         m_p2pInterface->stop();
     }
-
+    if (m_amop)
+    {
+        m_amop->stop();
+    }
     GATEWAY_LOG(INFO) << LOG_DESC("stop end.");
     return;
 }

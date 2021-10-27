@@ -24,6 +24,7 @@
 #include <bcos-framework/interfaces/gateway/GatewayInterface.h>
 #include <bcos-gateway/Common.h>
 #include <bcos-gateway/GatewayNodeManager.h>
+#include <bcos-gateway/libamop/AMOPImpl.h>
 #include <bcos-gateway/libp2p/Service.h>
 
 namespace bcos
@@ -35,10 +36,11 @@ class Gateway : public GatewayInterface, public std::enable_shared_from_this<Gat
 public:
     using Ptr = std::shared_ptr<Gateway>;
     Gateway(std::string const& _chainID, P2PInterface::Ptr _p2pInterface,
-        GatewayNodeManager::Ptr _gatewayNodeManager)
+        GatewayNodeManager::Ptr _gatewayNodeManager, bcos::amop::AMOPImpl::Ptr _amop)
       : m_chainID(_chainID),
         m_p2pInterface(_p2pInterface),
-        m_gatewayNodeManager(_gatewayNodeManager)
+        m_gatewayNodeManager(_gatewayNodeManager),
+        m_amop(_amop)
     {}
     virtual ~Gateway() { stop(); }
 
@@ -154,6 +156,37 @@ public:
     void asyncNotifyGroupInfo(
         bcos::group::GroupInfo::Ptr, std::function<void(Error::Ptr&&)>) override;
 
+    /// for AMOP
+    void asyncSendMessageByTopic(const std::string& _topic, bcos::bytesConstRef _data,
+        std::function<void(bcos::Error::Ptr&&, int16_t, bytesPointer)> _respFunc) override
+    {
+        m_amop->asyncSendMessageByTopic(_topic, _data, _respFunc);
+    }
+    void asyncSendBroadbastMessageByTopic(
+        const std::string& _topic, bcos::bytesConstRef _data) override
+    {
+        m_amop->asyncSendBroadbastMessageByTopic(_topic, _data);
+    }
+
+    void asyncRegisterClient(std::string const& _clientID, std::string const& _clientEndPoint,
+        std::function<void(Error::Ptr&&)> _callback) override
+    {
+        m_amop->asyncRegisterClient(_clientID, _clientEndPoint, _callback);
+    }
+
+
+    void asyncSubscribeTopic(std::string const& _clientID, std::string const& _topicInfo,
+        std::function<void(Error::Ptr&&)> _callback) override
+    {
+        m_amop->asyncSubscribeTopic(_clientID, _topicInfo, _callback);
+    }
+
+    void asyncRemoveTopic(std::string const& _clientID, std::vector<std::string> const& _topicList,
+        std::function<void(Error::Ptr&&)> _callback) override
+    {
+        m_amop->asyncRemoveTopic(_clientID, _topicList, _callback);
+    }
+
 protected:
     bool trySendLocalMessage(const std::string& _groupID, bcos::crypto::NodeIDPtr _srcNodeID,
         bcos::crypto::NodeIDPtr _dstNodeID, bytesConstRef _payload, ErrorRespFunc _errorRespFunc);
@@ -166,6 +199,7 @@ private:
     P2PInterface::Ptr m_p2pInterface;
     // GatewayNodeManager
     GatewayNodeManager::Ptr m_gatewayNodeManager;
+    bcos::amop::AMOPImpl::Ptr m_amop;
 };
 }  // namespace gateway
 }  // namespace bcos

@@ -32,6 +32,8 @@
 
 using namespace bcos;
 using namespace gateway;
+using namespace bcos::amop;
+using namespace bcos::protocol;
 
 // register the function fetch pub hex from the cert
 void GatewayFactory::initCert2PubHexHandler()
@@ -303,7 +305,8 @@ std::shared_ptr<Gateway> GatewayFactory::buildGateway(GatewayConfig::Ptr _config
         gatewayNodeManager->setKeyFactory(keyFactory);
 
         // init Gateway
-        auto gateway = std::make_shared<Gateway>(m_chainID, service, gatewayNodeManager);
+        auto amop = buildAMOP(service, pubHex);
+        auto gateway = std::make_shared<Gateway>(m_chainID, service, gatewayNodeManager, amop);
         auto weakptrGatewayNodeManager = std::weak_ptr<GatewayNodeManager>(gatewayNodeManager);
         service->setGateway(std::weak_ptr<Gateway>(gateway));
         // register disconnect handler
@@ -326,4 +329,14 @@ std::shared_ptr<Gateway> GatewayFactory::buildGateway(GatewayConfig::Ptr _config
                                    << LOG_KV("error", boost::diagnostic_information(e));
         BOOST_THROW_EXCEPTION(e);
     }
+}
+
+bcos::amop::AMOPImpl::Ptr GatewayFactory::buildAMOP(
+    P2PInterface::Ptr _network, P2pID const& _p2pNodeID)
+{
+    auto topicManager = std::make_shared<TopicManager>();
+    auto amopMessageFactory = std::make_shared<MessageFactory>();
+    auto requestFactory = std::make_shared<AMOPRequestFactory>();
+    return std::make_shared<AMOPImpl>(
+        topicManager, amopMessageFactory, requestFactory, _network, _p2pNodeID);
 }

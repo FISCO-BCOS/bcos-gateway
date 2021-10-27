@@ -31,10 +31,10 @@
 #include <boost/asio/ip/tcp.hpp>
 
 #include <bcos-framework/interfaces/crypto/KeyInterface.h>
+#include <bcos-framework/interfaces/gateway/GatewayTypeDef.h>
 #include <bcos-framework/libutilities/Common.h>
 #include <bcos-framework/libutilities/Error.h>
 #include <bcos-framework/libutilities/Exceptions.h>
-
 namespace ba = boost::asio;
 namespace bi = boost::asio::ip;
 #define HOST_LOG(LEVEL) BCOS_LOG(LEVEL) << "[NETWORK][Host]"
@@ -45,18 +45,6 @@ namespace bcos
 {
 namespace gateway
 {
-// Message type definition
-enum MessageType : int16_t
-{
-    Heartbeat = 0x1,
-    Handshake = 0x2,
-    RequestNodeIDs = 0x3,
-    ResponseNodeIDs = 0x4,
-    PeerToPeerMessage = 0x5,
-    BroadcastMessage = 0x6,
-    AMOPMessageType = 0x7,
-};
-
 enum MessageExtFieldFlag
 {
     Response = 0x0001,
