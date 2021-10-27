@@ -136,14 +136,24 @@ bool TopicManager::queryTopicItemsByClient(const std::string& _client, TopicItem
  * @param _clientID: client identify, to be defined
  * @return void
  */
-void TopicManager::removeTopicsByClient(const std::string& _client)
+void TopicManager::removeTopics(
+    const std::string& _client, std::vector<std::string> const& _topicList)
 {
     {
         std::unique_lock lock(x_clientTopics);
-        m_client2TopicItems.erase(_client);
+        if (!m_client2TopicItems.count(_client))
+        {
+            return;
+        }
+        for (auto const& topic : _topicList)
+        {
+            if (m_client2TopicItems[_client].count(topic))
+            {
+                m_client2TopicItems[_client].erase(topic);
+            }
+        }
         incTopicSeq();
     }
-
     TOPIC_LOG(INFO) << LOG_BADGE("removeTopicsByClient") << LOG_KV("client", _client)
                     << LOG_KV("topicSeq", topicSeq());
 }

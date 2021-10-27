@@ -54,7 +54,7 @@ enum MessageType : int16_t
     ResponseNodeIDs = 0x4,
     PeerToPeerMessage = 0x5,
     BroadcastMessage = 0x6,
-    AMOPMessage = 0x7,
+    AMOPMessageType = 0x7,
 };
 
 enum MessageExtFieldFlag
@@ -129,7 +129,7 @@ public:
     NetworkException(int _errorCode, const std::string& _msg)
       : m_errorCode(_errorCode), m_msg(_msg){};
 
-    virtual int errorCode() { return m_errorCode; };
+    virtual int errorCode() const { return m_errorCode; };
     virtual const char* what() const noexcept override { return m_msg.c_str(); };
     bool operator!() const { return m_errorCode == 0; }
 

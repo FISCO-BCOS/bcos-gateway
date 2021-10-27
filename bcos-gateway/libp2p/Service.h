@@ -135,6 +135,27 @@ public:
     void asyncSendMessageByP2PNodeIDs(int16_t _type, const std::vector<P2pID>& _nodeIDs,
         bytesConstRef _payload, Options _options) override;
 
+    void registerHandlerByMsgType(int16_t _type, MessageHandler const& _msgHandler) override
+    {
+        UpgradableGuard l(x_msgHandlers);
+        if (m_msgHandlers.count(_type) || !_msgHandler)
+        {
+            return;
+        }
+        UpgradeGuard ul(l);
+        m_msgHandlers[_type] = _msgHandler;
+    }
+
+    MessageHandler getMessageHandlerByMsgType(int16_t _type)
+    {
+        ReadGuard l(x_msgHandlers);
+        if (m_msgHandlers.count(_type))
+        {
+            return m_msgHandlers[_type];
+        }
+        return nullptr;
+    }
+
 private:
     std::shared_ptr<P2PMessage> newP2PMessage(int16_t _type, bytesConstRef _payload);
 
@@ -160,6 +181,9 @@ private:
     std::shared_ptr<boost::asio::deadline_timer> m_timer;
 
     bool m_run = false;
+
+    std::map<int16_t, MessageHandler> m_msgHandlers;
+    mutable SharedMutex x_msgHandlers;
 };
 
 }  // namespace gateway

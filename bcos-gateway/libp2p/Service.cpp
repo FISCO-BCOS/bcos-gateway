@@ -347,6 +347,13 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session, Message::P
                            << LOG_KV("packetType", p2pMessage->packetType());
 
         auto packetType = p2pMessage->packetType();
+        auto handler = getMessageHandlerByMsgType(packetType);
+        if (handler)
+        {
+            // TODO: use threadpool here
+            handler(e, p2pSession, p2pMessage);
+            return;
+        }
         switch (packetType)
         {
         case MessageType::Handshake:
@@ -417,6 +424,7 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session, Message::P
             gateway->onReceiveBroadcastMessage(groupID, srcNodeIDPtr, bytesConstRefPayload);
         }
         break;
+            break;
         default:
         {
             SERVICE_LOG(ERROR) << LOG_DESC("Unrecognized message type")

@@ -34,6 +34,8 @@ bool AMOPMessage::encode(bcos::bytes& _buffer)
 {
     uint16_t type = boost::asio::detail::socket_ops::host_to_network_short(m_type);
     _buffer.insert(_buffer.end(), (byte*)&type, (byte*)&type + 2);
+    uint16_t status = boost::asio::detail::socket_ops::host_to_network_short(m_status);
+    _buffer.insert(_buffer.end(), (byte*)&status, (byte*)&status + 2);
     _buffer.insert(_buffer.end(), m_data.begin(), m_data.end());
     return true;
 }
@@ -52,6 +54,9 @@ ssize_t AMOPMessage::decode(bcos::bytesConstRef _buffer)
 
     std::size_t offset = 0;
     m_type = boost::asio::detail::socket_ops::network_to_host_short(
+        *((uint16_t*)(_buffer.data() + offset)));
+    offset += 2;
+    m_status = boost::asio::detail::socket_ops::network_to_host_short(
         *((uint16_t*)(_buffer.data() + offset)));
     offset += 2;
     m_data = _buffer.getCroppedData(offset);

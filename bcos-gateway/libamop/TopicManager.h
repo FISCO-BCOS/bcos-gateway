@@ -20,9 +20,11 @@
 #pragma once
 
 #include <bcos-framework/interfaces/crypto/KeyInterface.h>
-#include <bcos-framework/libutilities/Common.h>
 #include <bcos-framework/interfaces/rpc/RPCInterface.h>
+#include <bcos-framework/libutilities/Common.h>
 #include <bcos-gateway/libamop/Common.h>
+#include <bcos-tars-protocol/client/RpcServiceClient.h>
+#include <tarscpp/servant/Application.h>
 #include <algorithm>
 #include <shared_mutex>
 
@@ -77,7 +79,7 @@ public:
      * @param _clientID: client identify, to be defined
      * @return void
      */
-    void removeTopicsByClient(const std::string& _client);
+    void removeTopics(const std::string& _client, std::vector<std::string> const& _topicList);
     /**
      * @brief: query topics subscribed by all connected clients
      * @return json string result, include topicSeq and topicItems fields
@@ -129,15 +131,36 @@ public:
      */
     void queryClientsByTopic(const std::string& _topic, std::vector<std::string>& _clients);
 
-    // TODO: implement this
-    //bcos::rpc::RPCInterface::Ptr getServiceByClient(std::string const& _clientID);
+    bcos::rpc::RPCInterface::Ptr getServiceByClient(std::string const& _clientID)
+    {
+        ReadGuard l(x_clientInfo);
+        if (m_clientInfo.count(_clientID))
+        {
+            return m_clientInfo[_clientID];
+        }
+        return nullptr;
+    }
+
+    virtual void registerCient(std::string const& _clientID, std::string const& _endPointInfo)
+    {
+        // TODO: check _endPointInfo
+        UpgradableGuard l(x_clientInfo);
+        if (m_clientInfo.count(_clientID))
+        {
+            return;
+        }
+        auto servicePrx =
+            Application::getCommunicator()->stringToProxy<bcostars::RpcServicePrx>(_endPointInfo);
+        auto rpcClient = std::make_shared<bcostars::RpcServiceClient>(servicePrx);
+        UpgradeGuard ul(l);
+        m_clientInfo[_clientID] = rpcClient;
+    }
 
 private:
     // m_client2TopicItems lock
     mutable std::shared_mutex x_clientTopics;
     // client => TopicItems
     std::unordered_map<std::string, TopicItems> m_client2TopicItems;
-
 
     // topicSeq
     std::atomic<uint32_t> m_topicSeq{1};
@@ -149,6 +172,9 @@ private:
 
     // nodeID => topicItems
     std::unordered_map<std::string, TopicItems> m_nodeID2TopicItems;
+
+    std::map<std::string, bcos::rpc::RPCInterface::Ptr> m_clientInfo;
+    mutable SharedMutex x_clientInfo;
 };
 }  // namespace amop
 }  // namespace bcos
