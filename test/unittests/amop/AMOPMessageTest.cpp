@@ -31,7 +31,7 @@ BOOST_FIXTURE_TEST_SUITE(AMOPMessageTest, TestPromptFixture)
 
 BOOST_AUTO_TEST_CASE(test_initAMOPMessage)
 {
-    auto messageFactory = std::make_shared<MessageFactory>();
+    auto messageFactory = std::make_shared<AMOPMessageFactory>();
     {
         auto message = messageFactory->buildMessage();
         auto buffer = std::make_shared<bytes>();
@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE(test_initAMOPMessage)
 
 BOOST_AUTO_TEST_CASE(test_AMOPMessageTopicOverflow)
 {
-    auto messageFactory = std::make_shared<MessageFactory>();
+    auto messageFactory = std::make_shared<AMOPMessageFactory>();
 
     uint16_t type = 1234;
     std::string data(10000, '1');

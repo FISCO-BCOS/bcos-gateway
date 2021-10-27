@@ -168,13 +168,6 @@ public:
         m_amop->asyncSendBroadbastMessageByTopic(_topic, _data);
     }
 
-    void asyncRegisterClient(std::string const& _clientID, std::string const& _clientEndPoint,
-        std::function<void(Error::Ptr&&)> _callback) override
-    {
-        m_amop->asyncRegisterClient(_clientID, _clientEndPoint, _callback);
-    }
-
-
     void asyncSubscribeTopic(std::string const& _clientID, std::string const& _topicInfo,
         std::function<void(Error::Ptr&&)> _callback) override
     {
@@ -186,6 +179,8 @@ public:
     {
         m_amop->asyncRemoveTopic(_clientID, _topicList, _callback);
     }
+
+    bcos::amop::AMOPImpl::Ptr amop() { return m_amop; }
 
 protected:
     bool trySendLocalMessage(const std::string& _groupID, bcos::crypto::NodeIDPtr _srcNodeID,

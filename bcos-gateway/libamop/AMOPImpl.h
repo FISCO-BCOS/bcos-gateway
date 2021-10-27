@@ -37,16 +37,13 @@ class AMOPImpl
 {
 public:
     using Ptr = std::shared_ptr<AMOPImpl>;
-    AMOPImpl(TopicManager::Ptr _topicManager, MessageFactory::Ptr _messageFactory,
+    AMOPImpl(TopicManager::Ptr _topicManager, AMOPMessageFactory::Ptr _messageFactory,
         bcos::protocol::AMOPRequestFactory::Ptr _requestFactory,
         bcos::gateway::P2PInterface::Ptr _network, bcos::gateway::P2pID const& _p2pNodeID);
     virtual ~AMOPImpl() {}
 
     virtual void start();
     virtual void stop();
-    virtual void asyncRegisterClient(std::string const& _clientID,
-        std::string const& _clientEndPoint, std::function<void(Error::Ptr&&)> _callback);
-
     virtual void asyncSubscribeTopic(std::string const& _clientID, std::string const& _topicInfo,
         std::function<void(Error::Ptr&&)> _callback);
     virtual void asyncRemoveTopic(std::string const& _clientID,
@@ -75,6 +72,8 @@ public:
         bcos::gateway::P2PSession::Ptr _session,
         std::shared_ptr<bcos::gateway::P2PMessage> _message);
 
+    virtual TopicManager::Ptr topicManager(){return m_topicManager;}
+    
 protected:
     virtual void dispatcherAMOPMessage(bcos::gateway::NetworkException const& _e,
         bcos::gateway::P2PSession::Ptr _session,
@@ -139,7 +138,7 @@ private:
 
 private:
     std::shared_ptr<TopicManager> m_topicManager;
-    std::shared_ptr<MessageFactory> m_messageFactory;
+    std::shared_ptr<AMOPMessageFactory> m_messageFactory;
     std::shared_ptr<bcos::protocol::AMOPRequestFactory> m_requestFactory;
     std::shared_ptr<Timer> m_timer;
     bcos::gateway::P2PInterface::Ptr m_network;

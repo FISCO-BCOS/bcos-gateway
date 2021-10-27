@@ -19,6 +19,7 @@
  */
 #include "AMOPImpl.h"
 #include <bcos-framework/interfaces/protocol/CommonError.h>
+#include <bcos-gateway/libamop/AMOPMessage.h>
 #include <bcos-gateway/libnetwork/Common.h>
 #include <boost/bind/bind.hpp>
 using namespace bcos;
@@ -26,8 +27,9 @@ using namespace bcos::gateway;
 using namespace bcos::amop;
 using namespace bcos::protocol;
 
-AMOPImpl::AMOPImpl(TopicManager::Ptr _topicManager, MessageFactory::Ptr _messageFactory,
-    AMOPRequestFactory::Ptr _requestFactory, P2PInterface::Ptr _network, P2pID const& _p2pNodeID)
+AMOPImpl::AMOPImpl(TopicManager::Ptr _topicManager,
+    bcos::amop::AMOPMessageFactory::Ptr _messageFactory, AMOPRequestFactory::Ptr _requestFactory,
+    P2PInterface::Ptr _network, P2pID const& _p2pNodeID)
   : m_topicManager(_topicManager),
     m_messageFactory(_messageFactory),
     m_requestFactory(_requestFactory),
@@ -38,18 +40,20 @@ AMOPImpl::AMOPImpl(TopicManager::Ptr _topicManager, MessageFactory::Ptr _message
     m_timer = std::make_shared<Timer>(TOPIC_SYNC_PERIOD, "topicSync");
     m_timer->registerTimeoutHandler([this]() { broadcastTopicSeq(); });
     m_network->registerHandlerByMsgType(MessageType::AMOPMessageType,
-        boost::bind(&AMOP::onAMOPMessage, this, boost::placeholders::_1, boost::placeholders::_2,
-            boost::placeholders::_3));
+        boost::bind(&AMOPImpl::onAMOPMessage, this, boost::placeholders::_1,
+            boost::placeholders::_2, boost::placeholders::_3));
 }
 
 void AMOPImpl::start()
 {
     m_timer->start();
+    m_topicManager->start();
 }
 
 void AMOPImpl::stop()
 {
     m_timer->stop();
+    m_topicManager->stop();
 }
 
 void AMOPImpl::broadcastTopicSeq()
@@ -203,7 +207,7 @@ void AMOPImpl::onReceiveAMOPMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg,
     auto choosedClient = randomChoose(clients);
     auto amopRequestData = std::make_shared<bytes>();
     _msg->encode(*amopRequestData);
-    auto clientService = m_topicManager->getServiceByClient(choosedClient);
+    auto clientService = m_topicManager->createAndGetServiceByClient(choosedClient);
     clientService->asyncNotifyAMOPMessage(bcos::rpc::AMOPNotifyMessageType::Unicast, topic,
         bytesConstRef(amopRequestData->data(), amopRequestData->size()),
         [_responseCallback](Error::Ptr&& _error, bytesPointer _responseData) {
@@ -237,7 +241,7 @@ void AMOPImpl::onReceiveAMOPBroadcastMessage(P2pID const& _nodeID, AMOPMessage::
     _msg->encode(*amopRequestData);
     for (const auto& client : clients)
     {
-        auto clientService = m_topicManager->getServiceByClient(client);
+        auto clientService = m_topicManager->createAndGetServiceByClient(client);
         AMOP_LOG(TRACE) << LOG_BADGE("onRecvAMOPBroadcastMessage")
                         << LOG_DESC("push message to client") << LOG_KV("topic", topic)
                         << LOG_KV("client", client);
@@ -419,17 +423,6 @@ void AMOPImpl::dispatcherAMOPMessage(
     default:
         AMOP_LOG(WARNING) << LOG_DESC("unkown AMOP message type") << LOG_KV("type", amopMsgType);
     }
-}
-
-void AMOPImpl::asyncRegisterClient(std::string const& _clientID, std::string const& _clientEndPoint,
-    std::function<void(Error::Ptr&&)> _callback)
-{
-    m_topicManager->registerCient(_clientID, _clientEndPoint);
-    if (!_callback)
-    {
-        return;
-    }
-    _callback(nullptr);
 }
 
 void AMOPImpl::asyncSubscribeTopic(std::string const& _clientID, std::string const& _topicInfo,

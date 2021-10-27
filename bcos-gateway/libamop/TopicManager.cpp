@@ -101,7 +101,7 @@ void TopicManager::subTopic(const std::string& _client, const TopicItems& _topic
         m_client2TopicItems[_client] = _topicItems;  // Override the previous value
         incTopicSeq();
     }
-
+    createAndGetServiceByClient(_client);
     TOPIC_LOG(INFO) << LOG_BADGE("subTopic") << LOG_KV("client", _client)
                     << LOG_KV("topicSeq", topicSeq())
                     << LOG_KV("topicItems size", _topicItems.size());
@@ -156,6 +156,20 @@ void TopicManager::removeTopics(
     }
     TOPIC_LOG(INFO) << LOG_BADGE("removeTopics") << LOG_KV("client", _client)
                     << LOG_KV("topicSeq", topicSeq());
+}
+
+void TopicManager::removeTopicsByClients(const std::vector<std::string>& _clients)
+{
+    std::unique_lock lock(x_clientTopics);
+    for (auto const& client : _clients)
+    {
+        if (m_client2TopicItems.count(client))
+        {
+            m_client2TopicItems.erase(client);
+        }
+        TOPIC_LOG(INFO) << LOG_BADGE("removeTopicsByClients") << LOG_KV("client", client);
+    }
+    incTopicSeq();
 }
 
 /**
@@ -366,4 +380,31 @@ void TopicManager::queryClientsByTopic(
 
     TOPIC_LOG(INFO) << LOG_BADGE("queryClientsByTopic") << LOG_KV("topic", _topic)
                     << LOG_KV("clients size", _clients.size());
+}
+
+void TopicManager::checkClientConnection()
+{
+    std::vector<std::string> clientsToRemove;
+    {
+        std::unique_lock lock(x_clientInfo);
+        vector<tars::EndpointInfo> activeEndPoints;
+        vector<tars::EndpointInfo> nactiveEndPoints;
+        for (auto it = m_clientInfo.begin(); it != m_clientInfo.end();)
+        {
+            auto rpcClient = std::dynamic_pointer_cast<bcostars::RpcServiceClient>(it->second);
+            rpcClient->prx()->tars_endpointsAll(activeEndPoints, nactiveEndPoints);
+            if (activeEndPoints.size() > 0)
+            {
+                it++;
+                continue;
+            }
+            {
+                TOPIC_LOG(INFO) << LOG_DESC("checkClientConnection: remove disconnected client")
+                                << LOG_KV("client", it->first);
+                clientsToRemove.emplace_back(it->first);
+                it = m_clientInfo.erase(it);
+            }
+        }
+        removeTopicsByClients(clientsToRemove);
+    }
 }

@@ -64,10 +64,11 @@ private:
     uint16_t m_status{0};
     bcos::bytesConstRef m_data = bytesConstRef();
 };
-class MessageFactory
+class AMOPMessageFactory
 {
 public:
-    using Ptr = std::shared_ptr<MessageFactory>;
+    using Ptr = std::shared_ptr<AMOPMessageFactory>;
+    AMOPMessageFactory() = default;
     AMOPMessage::Ptr buildMessage() { return std::make_shared<AMOPMessage>(); }
     AMOPMessage::Ptr buildMessage(bytesConstRef _data)
     {

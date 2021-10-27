@@ -22,6 +22,7 @@
 #include <bcos-framework/interfaces/crypto/KeyInterface.h>
 #include <bcos-framework/interfaces/rpc/RPCInterface.h>
 #include <bcos-framework/libutilities/Common.h>
+#include <bcos-framework/libutilities/Timer.h>
 #include <bcos-gateway/libamop/Common.h>
 #include <bcos-tars-protocol/client/RpcServiceClient.h>
 #include <tarscpp/servant/Application.h>
@@ -36,8 +37,15 @@ class TopicManager : public std::enable_shared_from_this<TopicManager>
 {
 public:
     using Ptr = std::shared_ptr<TopicManager>;
-    TopicManager() = default;
+    TopicManager()
+    {
+        m_timer = std::make_shared<Timer>(CONNECTION_CHECK_PERIOD, "topicChecker");
+        m_timer->registerTimeoutHandler(boost::bind(&TopicManager::checkClientConnection, this));
+    }
     virtual ~TopicManager() {}
+
+    virtual void start() { m_timer->start(); }
+    virtual void stop() { m_timer->stop(); }
 
     uint32_t topicSeq() const { return m_topicSeq; }
     uint32_t incTopicSeq()
@@ -80,6 +88,7 @@ public:
      * @return void
      */
     void removeTopics(const std::string& _client, std::vector<std::string> const& _topicList);
+    void removeTopicsByClients(const std::vector<std::string>& _clients);
     /**
      * @brief: query topics subscribed by all connected clients
      * @return json string result, include topicSeq and topicItems fields
@@ -131,35 +140,37 @@ public:
      */
     void queryClientsByTopic(const std::string& _topic, std::vector<std::string>& _clients);
 
-    bcos::rpc::RPCInterface::Ptr getServiceByClient(std::string const& _clientID)
+    virtual bcos::rpc::RPCInterface::Ptr createAndGetServiceByClient(std::string const& _clientID)
     {
-        ReadGuard l(x_clientInfo);
-        if (m_clientInfo.count(_clientID))
+        try
         {
-            return m_clientInfo[_clientID];
+            UpgradableGuard l(x_clientInfo);
+            if (m_clientInfo.count(_clientID))
+            {
+                return m_clientInfo[_clientID];
+            }
+            auto servicePrx =
+                Application::getCommunicator()->stringToProxy<bcostars::RpcServicePrx>(_clientID);
+            auto rpcClient = std::make_shared<bcostars::RpcServiceClient>(servicePrx);
+            UpgradeGuard ul(l);
+            m_clientInfo[_clientID] = rpcClient;
+            return rpcClient;
+        }
+        catch (std::exception const& e)
+        {
+            TOPIC_LOG(WARNING) << LOG_DESC("createAndGetServiceByClient exception")
+                               << LOG_KV("error", boost::diagnostic_information(e));
         }
         return nullptr;
     }
 
-    virtual void registerCient(std::string const& _clientID, std::string const& _endPointInfo)
-    {
-        // TODO: check _endPointInfo
-        UpgradableGuard l(x_clientInfo);
-        if (m_clientInfo.count(_clientID))
-        {
-            return;
-        }
-        auto servicePrx =
-            Application::getCommunicator()->stringToProxy<bcostars::RpcServicePrx>(_endPointInfo);
-        auto rpcClient = std::make_shared<bcostars::RpcServiceClient>(servicePrx);
-        UpgradeGuard ul(l);
-        m_clientInfo[_clientID] = rpcClient;
-    }
+protected:
+    virtual void checkClientConnection();
 
-private:
     // m_client2TopicItems lock
     mutable std::shared_mutex x_clientTopics;
     // client => TopicItems
+    // Note: the clientID is the rpc node endpoint
     std::unordered_map<std::string, TopicItems> m_client2TopicItems;
 
     // topicSeq
@@ -175,6 +186,9 @@ private:
 
     std::map<std::string, bcos::rpc::RPCInterface::Ptr> m_clientInfo;
     mutable SharedMutex x_clientInfo;
+
+    std::shared_ptr<Timer> m_timer;
+    unsigned const int CONNECTION_CHECK_PERIOD = 2000;
 };
 }  // namespace amop
 }  // namespace bcos

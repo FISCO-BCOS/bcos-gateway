@@ -44,6 +44,10 @@ void Gateway::start()
     {
         m_amop->start();
     }
+    if (m_gatewayNodeManager)
+    {
+        m_gatewayNodeManager->start();
+    }
 
     const auto& frontServiceInfos = m_gatewayNodeManager->frontServiceInfos();
     if (frontServiceInfos.empty())
@@ -76,6 +80,10 @@ void Gateway::stop()
     if (m_amop)
     {
         m_amop->stop();
+    }
+    if (m_gatewayNodeManager)
+    {
+        m_gatewayNodeManager->stop();
     }
     GATEWAY_LOG(INFO) << LOG_DESC("stop end.");
     return;
