@@ -25,6 +25,7 @@
 #include <bcos-framework/interfaces/front/FrontServiceInterface.h>
 #include <bcos-gateway/Gateway.h>
 #include <bcos-gateway/GatewayConfig.h>
+#include <bcos-gateway/libamop/AMOPImpl.h>
 #include <boost/asio/ssl.hpp>
 
 namespace bcos
@@ -35,7 +36,6 @@ class GatewayFactory
 {
 public:
     using Ptr = std::shared_ptr<GatewayFactory>;
-
     GatewayFactory(std::string const& _chainID) : m_chainID(_chainID)
     {
         initCert2PubHexHandler();
@@ -71,13 +71,19 @@ public:
      * @param _configPath: config.ini path
      * @return void
      */
-    Gateway::Ptr buildGateway(const std::string& _configPath);
+    Gateway::Ptr buildGateway(const std::string& _configPath, bool _localMode);
     /**
      * @brief: construct Gateway
      * @param _config: config parameter object
      * @return void
      */
-    Gateway::Ptr buildGateway(GatewayConfig::Ptr _config);
+    Gateway::Ptr buildGateway(GatewayConfig::Ptr _config, bool _localMode);
+
+protected:
+    virtual bcos::amop::AMOPImpl::Ptr buildAMOP(
+        bcos::gateway::P2PInterface::Ptr _network, bcos::gateway::P2pID const& _p2pNodeID);
+    virtual bcos::amop::AMOPImpl::Ptr buildLocalAMOP(
+        bcos::gateway::P2PInterface::Ptr _network, bcos::gateway::P2pID const& _p2pNodeID);
 
 private:
     std::function<bool(X509* cert, std::string& pubHex)> m_sslContextPubHandler;

@@ -20,18 +20,24 @@
  */
 
 #include <bcos-crypto/signature/key/KeyFactoryImpl.h>
+#include <bcos-framework/interfaces/rpc/RPCInterface.h>
 #include <bcos-framework/libutilities/DataConvertUtility.h>
 #include <bcos-framework/libutilities/FileUtility.h>
+#include <bcos-gateway/DynamicGatewayNodeManager.h>
 #include <bcos-gateway/GatewayFactory.h>
 #include <bcos-gateway/GatewayNodeManager.h>
+#include <bcos-gateway/libamop/LocalTopicManager.h>
 #include <bcos-gateway/libnetwork/ASIOInterface.h>
 #include <bcos-gateway/libnetwork/Common.h>
 #include <bcos-gateway/libnetwork/Host.h>
 #include <bcos-gateway/libnetwork/Session.h>
 #include <bcos-gateway/libp2p/Service.h>
 
+using namespace bcos::rpc;
 using namespace bcos;
 using namespace gateway;
+using namespace bcos::amop;
+using namespace bcos::protocol;
 
 // register the function fetch pub hex from the cert
 void GatewayFactory::initCert2PubHexHandler()
@@ -236,12 +242,13 @@ std::shared_ptr<boost::asio::ssl::context> GatewayFactory::buildSSLContext(
  * @param _configPath: config.ini path
  * @return void
  */
-std::shared_ptr<Gateway> GatewayFactory::buildGateway(const std::string& _configPath)
+std::shared_ptr<Gateway> GatewayFactory::buildGateway(
+    const std::string& _configPath, bool _localMode)
 {
     auto config = std::make_shared<GatewayConfig>();
     // load config
     config->initConfig(_configPath);
-    return buildGateway(config);
+    return buildGateway(config, _localMode);
 }
 
 /**
@@ -249,7 +256,7 @@ std::shared_ptr<Gateway> GatewayFactory::buildGateway(const std::string& _config
  * @param _config: config parameter object
  * @return void
  */
-std::shared_ptr<Gateway> GatewayFactory::buildGateway(GatewayConfig::Ptr _config)
+std::shared_ptr<Gateway> GatewayFactory::buildGateway(GatewayConfig::Ptr _config, bool _localMode)
 {
     try
     {
@@ -299,11 +306,20 @@ std::shared_ptr<Gateway> GatewayFactory::buildGateway(GatewayConfig::Ptr _config
         service->setKeyFactory(keyFactory);
 
         // init GatewayNodeManager
-        auto gatewayNodeManager = std::make_shared<GatewayNodeManager>(pubHex);
-        gatewayNodeManager->setKeyFactory(keyFactory);
-
+        GatewayNodeManager::Ptr gatewayNodeManager;
+        AMOPImpl::Ptr amop;
+        if (_localMode)
+        {
+            gatewayNodeManager = std::make_shared<GatewayNodeManager>(pubHex, keyFactory);
+            amop = buildLocalAMOP(service, pubHex);
+        }
+        else
+        {
+            gatewayNodeManager = std::make_shared<DynamicGatewayNodeManager>(pubHex, keyFactory);
+            amop = buildAMOP(service, pubHex);
+        }
         // init Gateway
-        auto gateway = std::make_shared<Gateway>(m_chainID, service, gatewayNodeManager);
+        auto gateway = std::make_shared<Gateway>(m_chainID, service, gatewayNodeManager, amop);
         auto weakptrGatewayNodeManager = std::weak_ptr<GatewayNodeManager>(gatewayNodeManager);
         service->setGateway(std::weak_ptr<Gateway>(gateway));
         // register disconnect handler
@@ -326,4 +342,25 @@ std::shared_ptr<Gateway> GatewayFactory::buildGateway(GatewayConfig::Ptr _config
                                    << LOG_KV("error", boost::diagnostic_information(e));
         BOOST_THROW_EXCEPTION(e);
     }
+}
+
+bcos::amop::AMOPImpl::Ptr GatewayFactory::buildAMOP(
+    P2PInterface::Ptr _network, P2pID const& _p2pNodeID)
+{
+    auto topicManager = std::make_shared<TopicManager>();
+    auto amopMessageFactory = std::make_shared<AMOPMessageFactory>();
+    auto requestFactory = std::make_shared<AMOPRequestFactory>();
+    return std::make_shared<AMOPImpl>(
+        topicManager, amopMessageFactory, requestFactory, _network, _p2pNodeID);
+}
+
+bcos::amop::AMOPImpl::Ptr GatewayFactory::buildLocalAMOP(
+    P2PInterface::Ptr _network, P2pID const& _p2pNodeID)
+{
+    // Note: must set rpc to the topicManager before start the amop
+    auto topicManager = std::make_shared<LocalTopicManager>();
+    auto amopMessageFactory = std::make_shared<AMOPMessageFactory>();
+    auto requestFactory = std::make_shared<AMOPRequestFactory>();
+    return std::make_shared<AMOPImpl>(
+        topicManager, amopMessageFactory, requestFactory, _network, _p2pNodeID);
 }

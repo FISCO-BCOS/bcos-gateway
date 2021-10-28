@@ -22,7 +22,6 @@
 #include <bcos-framework/interfaces/crypto/KeyFactory.h>
 #include <bcos-framework/interfaces/front/FrontServiceInterface.h>
 #include <bcos-framework/interfaces/gateway/GatewayInterface.h>
-#include <bcos-framework/libutilities/Timer.h>
 #include <bcos-gateway/Common.h>
 #include <bcos-gateway/libnetwork/Common.h>
 #include <bcos-tars-protocol/client/FrontServiceClient.h>
@@ -64,13 +63,13 @@ class GatewayNodeManager
 {
 public:
     using Ptr = std::shared_ptr<GatewayNodeManager>;
-    GatewayNodeManager(P2pID const& _nodeID) : m_p2pNodeID(_nodeID)
-    {
-        m_frontServiceInfoUpdater = std::make_shared<Timer>(1000, "frontServiceUpdater");
-        m_frontServiceInfoUpdater->registerTimeoutHandler([this]() { updateFrontServiceInfo(); });
-        m_frontServiceInfoUpdater->start();
-        m_startT = utcTime();
-    }
+    GatewayNodeManager(P2pID const& _nodeID, std::shared_ptr<bcos::crypto::KeyFactory> _keyFactory)
+      : m_p2pNodeID(_nodeID), m_keyFactory(_keyFactory)
+    {}
+
+    virtual void start() {}
+    virtual void stop() {}
+
     virtual ~GatewayNodeManager() {}
 
     uint32_t statusSeq() { return m_statusSeq; }
@@ -120,28 +119,20 @@ public:
      */
     bool unregisterFrontService(const std::string& _groupID, bcos::crypto::NodeIDPtr _nodeID);
 
-    virtual void updateFrontServiceInfo(bcos::group::GroupInfo::Ptr _groupInfo);
-
-    virtual void updateFrontServiceInfo();
-
     const std::unordered_map<std::string, std::unordered_map<std::string, FrontServiceInfo::Ptr>>&
     frontServiceInfos() const
     {
         return m_frontServiceInfos;
     }
-
     std::shared_ptr<bcos::crypto::KeyFactory> keyFactory() { return m_keyFactory; }
-
-    void setKeyFactory(std::shared_ptr<bcos::crypto::KeyFactory> _keyFactory)
-    {
-        m_keyFactory = _keyFactory;
-    }
-
     FrontServiceInfo::Ptr queryLocalNodes(std::string const& _groupID, std::string const& _nodeID);
     std::unordered_map<std::string, FrontServiceInfo::Ptr> groupFrontServices(
         std::string const& _groupID);
 
-private:
+    // for multi-group support
+    virtual void updateFrontServiceInfo(bcos::group::GroupInfo::Ptr) {}
+
+protected:
     P2pID m_p2pNodeID;
     std::shared_ptr<bcos::crypto::KeyFactory> m_keyFactory;
     // statusSeq
@@ -158,11 +149,6 @@ private:
     // groupID => nodeID => FrontServiceInterface
     std::unordered_map<std::string, std::unordered_map<std::string, FrontServiceInfo::Ptr>>
         m_frontServiceInfos;
-    std::shared_ptr<Timer> m_frontServiceInfoUpdater;
-
-
-    uint64_t m_startT;
-    uint64_t c_tarsAdminRefreshInitTime = 120 * 1000;
 };
 }  // namespace gateway
 }  // namespace bcos

@@ -636,20 +636,22 @@ void Service::asyncSendMessageByP2PNodeID(int16_t _type, P2pID _dstNodeID, bytes
         _dstNodeID, p2pMessage,
         [_dstNodeID, _callback](NetworkException _e, std::shared_ptr<P2PSession>,
             std::shared_ptr<P2PMessage> _p2pMessage) {
+            auto packetType = _p2pMessage ? _p2pMessage->packetType() : 0;
             if (_e.errorCode() != 0)
             {
                 GATEWAY_LOG(WARNING) << LOG_DESC("asyncSendMessageByP2PNodeID error")
                                      << LOG_KV("code", _e.errorCode()) << LOG_KV("msg", _e.what())
-                                     << LOG_KV("dst", _dstNodeID);
+                                     << LOG_KV("type", packetType) << LOG_KV("dst", _dstNodeID);
                 if (_callback)
                 {
-                    _callback(_e.toError(), nullptr);
+                    _callback(
+                        _e.toError(), packetType, _p2pMessage ? _p2pMessage->payload() : nullptr);
                 }
                 return;
             }
             if (_callback)
             {
-                _callback(nullptr, _p2pMessage->payload());
+                _callback(nullptr, packetType, _p2pMessage->payload());
             }
         },
         _options);

@@ -13,12 +13,13 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  *
- * @file AMOP.cpp
+ * @file AMOPImpl.cpp
  * @author: octopus
  * @date 2021-10-26
  */
-#include "AMOP.h"
+#include "AMOPImpl.h"
 #include <bcos-framework/interfaces/protocol/CommonError.h>
+#include <bcos-gateway/libamop/AMOPMessage.h>
 #include <bcos-gateway/libnetwork/Common.h>
 #include <boost/bind/bind.hpp>
 using namespace bcos;
@@ -26,8 +27,9 @@ using namespace bcos::gateway;
 using namespace bcos::amop;
 using namespace bcos::protocol;
 
-AMOP::AMOP(TopicManager::Ptr _topicManager, MessageFactory::Ptr _messageFactory,
-    AMOPRequestFactory::Ptr _requestFactory, P2PInterface::Ptr _network, P2pID const& _p2pNodeID)
+AMOPImpl::AMOPImpl(TopicManager::Ptr _topicManager,
+    bcos::amop::AMOPMessageFactory::Ptr _messageFactory, AMOPRequestFactory::Ptr _requestFactory,
+    P2PInterface::Ptr _network, P2pID const& _p2pNodeID)
   : m_topicManager(_topicManager),
     m_messageFactory(_messageFactory),
     m_requestFactory(_requestFactory),
@@ -38,21 +40,23 @@ AMOP::AMOP(TopicManager::Ptr _topicManager, MessageFactory::Ptr _messageFactory,
     m_timer = std::make_shared<Timer>(TOPIC_SYNC_PERIOD, "topicSync");
     m_timer->registerTimeoutHandler([this]() { broadcastTopicSeq(); });
     m_network->registerHandlerByMsgType(MessageType::AMOPMessageType,
-        boost::bind(&AMOP::onAMOPMessage, this, boost::placeholders::_1, boost::placeholders::_2,
-            boost::placeholders::_3));
+        boost::bind(&AMOPImpl::onAMOPMessage, this, boost::placeholders::_1,
+            boost::placeholders::_2, boost::placeholders::_3));
 }
 
-void AMOP::start()
+void AMOPImpl::start()
 {
     m_timer->start();
+    m_topicManager->start();
 }
 
-void AMOP::stop()
+void AMOPImpl::stop()
 {
     m_timer->stop();
+    m_topicManager->stop();
 }
 
-void AMOP::broadcastTopicSeq()
+void AMOPImpl::broadcastTopicSeq()
 {
     auto topicSeq = std::to_string(m_topicManager->topicSeq());
     auto buffer = buildAndEncodeMessage(
@@ -64,7 +68,7 @@ void AMOP::broadcastTopicSeq()
 }
 
 // receive the topic seq of other nodes, and try to request the latest topic when seq falling behind
-void AMOP::onReceiveTopicSeqMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg)
+void AMOPImpl::onReceiveTopicSeqMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg)
 {
     try
     {
@@ -84,7 +88,7 @@ void AMOP::onReceiveTopicSeqMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg)
         Options option(0);
         m_network->asyncSendMessageByP2PNodeID(MessageType::AMOPMessageType, _nodeID,
             bytesConstRef(buffer->data(), buffer->size()), option,
-            [_nodeID](Error::Ptr&& _error, bytesPointer) {
+            [_nodeID](Error::Ptr&& _error, int16_t, bytesPointer) {
                 if (_error && (_error->errorCode() != CommonError::SUCCESS))
                 {
                     AMOP_LOG(WARNING)
@@ -109,7 +113,7 @@ void AMOP::onReceiveTopicSeqMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg)
  * @param _data: message data
  * @return std::shared_ptr<bytes>
  */
-std::shared_ptr<bytes> AMOP::buildAndEncodeMessage(uint32_t _type, bcos::bytesConstRef _data)
+std::shared_ptr<bytes> AMOPImpl::buildAndEncodeMessage(uint32_t _type, bcos::bytesConstRef _data)
 {
     auto message = m_messageFactory->buildMessage();
     message->setType(_type);
@@ -120,7 +124,7 @@ std::shared_ptr<bytes> AMOP::buildAndEncodeMessage(uint32_t _type, bcos::bytesCo
 }
 
 // receive topic response and update the local topicManager
-void AMOP::onReceiveResponseTopicMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg)
+void AMOPImpl::onReceiveResponseTopicMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg)
 {
     try
     {
@@ -140,7 +144,7 @@ void AMOP::onReceiveResponseTopicMessage(P2pID const& _nodeID, AMOPMessage::Ptr 
 }
 
 // response topic message to the given node
-void AMOP::onReceiveRequestTopicMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg)
+void AMOPImpl::onReceiveRequestTopicMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg)
 {
     (void)_msg;
     try
@@ -156,7 +160,7 @@ void AMOP::onReceiveRequestTopicMessage(P2pID const& _nodeID, AMOPMessage::Ptr _
         Options option(0);
         m_network->asyncSendMessageByP2PNodeID(MessageType::AMOPMessageType, _nodeID,
             bytesConstRef(buffer->data(), buffer->size()), option,
-            [_nodeID](Error::Ptr&& _error, bytesPointer) {
+            [_nodeID](Error::Ptr&& _error, int16_t, bytesPointer) {
                 if (_error && (_error->errorCode() != CommonError::SUCCESS))
                 {
                     AMOP_LOG(WARNING)
@@ -175,8 +179,8 @@ void AMOP::onReceiveRequestTopicMessage(P2pID const& _nodeID, AMOPMessage::Ptr _
 }
 
 // receive AMOP request message from the given node
-void AMOP::onReceiveAMOPMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg,
-    std::function<void(bytesConstRef)> const& _responseCallback)
+void AMOPImpl::onReceiveAMOPMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg,
+    std::function<void(bytesPointer, int16_t)> const& _responseCallback)
 {
     AMOP_LOG(TRACE) << LOG_BADGE("onReceiveAMOPMessage") << LOG_KV("nodeID", _nodeID);
     // AMOPRequest
@@ -192,11 +196,9 @@ void AMOP::onReceiveAMOPMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg,
         amopMsg->setStatus(CommonError::NotFoundClientByTopicDispatchMsg);
         amopMsg->setType(AMOPMessage::Type::AMOPResponse);
         amopMsg->encode(*buffer);
-
         m_threadPool->enqueue([buffer, _responseCallback]() {
-            _responseCallback(bytesConstRef(buffer->data(), buffer->size()));
+            _responseCallback(buffer, MessageType::AMOPMessageType);
         });
-
         AMOP_LOG(WARNING) << LOG_BADGE("onRecvAMOPMessage")
                           << LOG_DESC("no client subscribe the topic") << LOG_KV("topic", topic)
                           << LOG_KV("nodeID", _nodeID);
@@ -205,25 +207,23 @@ void AMOP::onReceiveAMOPMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg,
     auto choosedClient = randomChoose(clients);
     auto amopRequestData = std::make_shared<bytes>();
     _msg->encode(*amopRequestData);
-
-#if 0
-    auto clientService = m_topicManager->getServiceByClient(choosedClient);
-    clientService->asyncNotifyAMOPMessage(AMOPNotifyMessageType::Unicast, topic, bytesConstRef(*amopRequestData), true,
-        [_responseCallback](Error::Ptr _error, bytesPointer _responseData) {
+    auto clientService = m_topicManager->createAndGetServiceByClient(choosedClient);
+    clientService->asyncNotifyAMOPMessage(bcos::rpc::AMOPNotifyMessageType::Unicast, topic,
+        bytesConstRef(amopRequestData->data(), amopRequestData->size()),
+        [_responseCallback](Error::Ptr&& _error, bytesPointer _responseData) {
             if (!_error || _error->errorCode() == CommonError::SUCCESS)
             {
-                _responseCallback(_responseData);
+                _responseCallback(_responseData, MessageType::WSMessageType);
                 return;
             }
             auto const& errorMessage = _error->errorMessage();
             auto response = std::make_shared<bytes>(errorMessage.begin(), errorMessage.end());
-            _responseCallback(bytesConstRef(*response));
+            _responseCallback(response, MessageType::WSMessageType);
         });
-#endif
 }
 
 // receive the AMOP broadcast message from given node
-void AMOP::onReceiveAMOPBroadcastMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg)
+void AMOPImpl::onReceiveAMOPBroadcastMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg)
 {
     // AMOPRequest
     auto request = m_requestFactory->buildRequest(_msg->data());
@@ -241,13 +241,13 @@ void AMOP::onReceiveAMOPBroadcastMessage(P2pID const& _nodeID, AMOPMessage::Ptr 
     _msg->encode(*amopRequestData);
     for (const auto& client : clients)
     {
-        auto clientService = m_topicManager->getServiceByClient(client);
+        auto clientService = m_topicManager->createAndGetServiceByClient(client);
         AMOP_LOG(TRACE) << LOG_BADGE("onRecvAMOPBroadcastMessage")
                         << LOG_DESC("push message to client") << LOG_KV("topic", topic)
                         << LOG_KV("client", client);
-#if 0
-        clientService->asyncNotifyAMOPMessage(AMOPNotifyMessageType::Broadcast,
-            topic, bytesConstRef(*amopRequestData), false, [client](Error::Ptr _error, bytesConstRef) {
+        clientService->asyncNotifyAMOPMessage(bcos::rpc::AMOPNotifyMessageType::Broadcast, topic,
+            bytesConstRef(amopRequestData->data(), amopRequestData->size()),
+            [client](Error::Ptr&& _error, bytesPointer) {
                 if (_error)
                 {
                     AMOP_LOG(WARNING)
@@ -257,15 +257,14 @@ void AMOP::onReceiveAMOPBroadcastMessage(P2pID const& _nodeID, AMOPMessage::Ptr 
                         << LOG_KV("msg", _error->errorMessage());
                 }
             });
-#endif
     }
     AMOP_LOG(TRACE) << LOG_DESC("onReceiveAMOPBroadcastMessage") << LOG_KV("nodeID", _nodeID);
 }
 
 
 // asyncSendMessage to the given topic
-void AMOP::asyncSendMessageByTopic(const std::string& _topic, bcos::bytesConstRef _data,
-    std::function<void(bcos::Error::Ptr&&, bytesPointer)> _respFunc)
+void AMOPImpl::asyncSendMessageByTopic(const std::string& _topic, bcos::bytesConstRef _data,
+    std::function<void(bcos::Error::Ptr&&, int16_t, bytesPointer)> _respFunc)
 {
     std::vector<P2pID> nodeIDs;
     m_topicManager->queryNodeIDsByTopic(_topic, nodeIDs);
@@ -275,7 +274,7 @@ void AMOP::asyncSendMessageByTopic(const std::string& _topic, bcos::bytesConstRe
             "there has no node subscribe this topic, topic: " + _topic);
         if (_respFunc)
         {
-            _respFunc(std::move(errorPtr), nullptr);
+            _respFunc(std::move(errorPtr), 0, nullptr);
         }
 
         AMOP_LOG(WARNING) << LOG_BADGE("asyncSendMessage")
@@ -290,7 +289,7 @@ void AMOP::asyncSendMessageByTopic(const std::string& _topic, bcos::bytesConstRe
     public:
         std::vector<P2pID> m_nodeIDs;
         std::shared_ptr<bytes> m_buffer;
-        std::function<void(bcos::Error::Ptr&&, bytesPointer)> m_callback;
+        std::function<void(bcos::Error::Ptr&&, int16_t, bytesPointer)> m_callback;
         P2PInterface::Ptr m_network;
 
     public:
@@ -302,7 +301,7 @@ void AMOP::asyncSendMessageByTopic(const std::string& _topic, bcos::bytesConstRe
                     CommonError::AMOPSendMsgFailed, "unable to send message to peer by topic");
                 if (m_callback)
                 {
-                    m_callback(std::move(errorPtr), nullptr);
+                    m_callback(std::move(errorPtr), 0, nullptr);
                 }
 
                 return;
@@ -314,7 +313,8 @@ void AMOP::asyncSendMessageByTopic(const std::string& _topic, bcos::bytesConstRe
             Options option(0);
             m_network->asyncSendMessageByP2PNodeID(MessageType::AMOPMessageType, choosedNodeID,
                 bytesConstRef(m_buffer->data(), m_buffer->size()), option,
-                [this, choosedNodeID](Error::Ptr&& _error, bytesPointer _responseData) {
+                [this, choosedNodeID](
+                    Error::Ptr&& _error, int16_t _type, bytesPointer _responseData) {
                     if (_error && (_error->errorCode() != CommonError::SUCCESS))
                     {
                         AMOP_LOG(DEBUG)
@@ -328,7 +328,7 @@ void AMOP::asyncSendMessageByTopic(const std::string& _topic, bcos::bytesConstRe
                     }
                     if (m_callback)
                     {
-                        m_callback(nullptr, _responseData);
+                        m_callback(nullptr, _type, _responseData);
                     }
                 });
         }
@@ -343,7 +343,8 @@ void AMOP::asyncSendMessageByTopic(const std::string& _topic, bcos::bytesConstRe
     sender->sendMessage();
 }
 
-void AMOP::asyncSendBroadbastMessageByTopic(const std::string& _topic, bcos::bytesConstRef _data)
+void AMOPImpl::asyncSendBroadbastMessageByTopic(
+    const std::string& _topic, bcos::bytesConstRef _data)
 {
     std::vector<std::string> nodeIDs;
     m_topicManager->queryNodeIDsByTopic(_topic, nodeIDs);
@@ -361,7 +362,7 @@ void AMOP::asyncSendBroadbastMessageByTopic(const std::string& _topic, bcos::byt
                     << LOG_KV("topic", _topic) << LOG_KV("data size", _data.size());
 }
 
-void AMOP::onAMOPMessage(
+void AMOPImpl::onAMOPMessage(
     NetworkException const& _e, P2PSession::Ptr _session, std::shared_ptr<P2PMessage> _message)
 {
     m_threadPool->enqueue([this, _e, _session, _message]() {
@@ -377,7 +378,7 @@ void AMOP::onAMOPMessage(
     });
 }
 
-void AMOP::dispatcherAMOPMessage(
+void AMOPImpl::dispatcherAMOPMessage(
     NetworkException const& _e, P2PSession::Ptr _session, std::shared_ptr<P2PMessage> _message)
 {
     if (_e.errorCode() != 0 || !_message)
@@ -405,14 +406,14 @@ void AMOP::dispatcherAMOPMessage(
         onReceiveResponseTopicMessage(fromNodeID, amopMessage);
         break;
     case AMOPMessage::Type::AMOPRequest:
-        onReceiveAMOPMessage(
-            fromNodeID, amopMessage, [this, _session, _message](bytesConstRef _responseData) {
+        onReceiveAMOPMessage(fromNodeID, amopMessage,
+            [this, _session, _message](bytesPointer _responseData, int16_t _type) {
                 auto responseP2PMsg = std::dynamic_pointer_cast<P2PMessage>(
                     m_network->messageFactory()->buildMessage());
                 responseP2PMsg->setSeq(_message->seq());
                 responseP2PMsg->setRespPacket();
-                responseP2PMsg->setPayload(
-                    std::make_shared<bytes>(_responseData.begin(), _responseData.end()));
+                responseP2PMsg->setPayload(_responseData);
+                responseP2PMsg->setPacketType(_type);
                 _session->session()->asyncSendMessage(responseP2PMsg);
             });
         break;
@@ -424,18 +425,7 @@ void AMOP::dispatcherAMOPMessage(
     }
 }
 
-void AMOP::asyncRegisterClient(std::string const& _clientID, std::string const& _clientEndPoint,
-    std::function<void(Error::Ptr&&)> _callback)
-{
-    m_topicManager->registerCient(_clientID, _clientEndPoint);
-    if (!_callback)
-    {
-        return;
-    }
-    _callback(nullptr);
-}
-
-void AMOP::asyncSubscribeTopic(std::string const& _clientID, std::string const& _topicInfo,
+void AMOPImpl::asyncSubscribeTopic(std::string const& _clientID, std::string const& _topicInfo,
     std::function<void(Error::Ptr&&)> _callback)
 {
     m_topicManager->subTopic(_clientID, _topicInfo);
@@ -446,10 +436,9 @@ void AMOP::asyncSubscribeTopic(std::string const& _clientID, std::string const& 
     _callback(nullptr);
 }
 
-void AMOP::asyncRemoveTopic(std::string const& _clientID,
+void AMOPImpl::asyncRemoveTopic(std::string const& _clientID,
     std::vector<std::string> const& _topicList, std::function<void(Error::Ptr&&)> _callback)
 {
-    //  void removeTopicsByClient(const std::string& _client);
     m_topicManager->removeTopics(_clientID, _topicList);
     if (!_callback)
     {

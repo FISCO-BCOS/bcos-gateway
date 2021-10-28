@@ -44,7 +44,8 @@ using CallbackFuncWithSession =
     std::function<void(NetworkException, std::shared_ptr<P2PSession>, std::shared_ptr<P2PMessage>)>;
 using DisconnectCallbackFuncWithSession =
     std::function<void(NetworkException, std::shared_ptr<P2PSession>)>;
-using P2PResponseCallback = std::function<void(Error::Ptr&& _error, std::shared_ptr<bytes> _data)>;
+using P2PResponseCallback =
+    std::function<void(Error::Ptr&& _error, int16_t, std::shared_ptr<bytes> _data)>;
 class P2PInterface
 {
 public:

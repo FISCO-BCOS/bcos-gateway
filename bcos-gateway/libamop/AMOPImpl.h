@@ -13,38 +13,37 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  *
- * @file AMOP.h
+ * @file AMOPImpl.h
  * @author: octopus
  * @date 2021-10-26
  */
 #pragma once
 #include "Common.h"
-#include <bcos-framework/interfaces/amop/AMOPInterface.h>
 #include <bcos-framework/interfaces/crypto/KeyFactory.h>
+#include <bcos-framework/libprotocol/amop/AMOPRequest.h>
 #include <bcos-framework/libutilities/ThreadPool.h>
 #include <bcos-framework/libutilities/Timer.h>
-#include <bcos-gateway/Gateway.h>
 #include <bcos-gateway/libamop/AMOPMessage.h>
-#include <bcos-gateway/libamop/AMOPRequest.h>
 #include <bcos-gateway/libamop/TopicManager.h>
+#include <bcos-gateway/libp2p/P2PInterface.h>
+#include <bcos-gateway/libp2p/P2PMessage.h>
+#include <bcos-gateway/libp2p/P2PSession.h>
 #include <boost/asio.hpp>
 namespace bcos
 {
 namespace amop
 {
-class AMOP
+class AMOPImpl
 {
 public:
-    AMOP(TopicManager::Ptr _topicManager, MessageFactory::Ptr _messageFactory,
-        AMOPRequestFactory::Ptr _requestFactory, bcos::gateway::P2PInterface::Ptr _network,
-        bcos::gateway::P2pID const& _p2pNodeID);
-    virtual ~AMOP() {}
+    using Ptr = std::shared_ptr<AMOPImpl>;
+    AMOPImpl(TopicManager::Ptr _topicManager, AMOPMessageFactory::Ptr _messageFactory,
+        bcos::protocol::AMOPRequestFactory::Ptr _requestFactory,
+        bcos::gateway::P2PInterface::Ptr _network, bcos::gateway::P2pID const& _p2pNodeID);
+    virtual ~AMOPImpl() {}
 
     virtual void start();
     virtual void stop();
-    virtual void asyncRegisterClient(std::string const& _clientID,
-        std::string const& _clientEndPoint, std::function<void(Error::Ptr&&)> _callback);
-
     virtual void asyncSubscribeTopic(std::string const& _clientID, std::string const& _topicInfo,
         std::function<void(Error::Ptr&&)> _callback);
     virtual void asyncRemoveTopic(std::string const& _clientID,
@@ -58,7 +57,7 @@ public:
      * @return void
      */
     virtual void asyncSendMessageByTopic(const std::string& _topic, bcos::bytesConstRef _data,
-        std::function<void(bcos::Error::Ptr&&, bytesPointer)> _respFunc);
+        std::function<void(bcos::Error::Ptr&&, int16_t, bytesPointer)> _respFunc);
 
     /**
      * @brief: async send message to all nodes subscribe _topic
@@ -73,6 +72,8 @@ public:
         bcos::gateway::P2PSession::Ptr _session,
         std::shared_ptr<bcos::gateway::P2PMessage> _message);
 
+    virtual TopicManager::Ptr topicManager(){return m_topicManager;}
+    
 protected:
     virtual void dispatcherAMOPMessage(bcos::gateway::NetworkException const& _e,
         bcos::gateway::P2PSession::Ptr _session,
@@ -120,7 +121,7 @@ protected:
      * @return void
      */
     virtual void onReceiveAMOPMessage(bcos::gateway::P2pID const& _nodeID, AMOPMessage::Ptr _msg,
-        std::function<void(bytesConstRef)> const& _responseCallback);
+        std::function<void(bytesPointer, int16_t)> const& _responseCallback);
 
     /**
      * @brief: receive broadcast message
@@ -137,8 +138,8 @@ private:
 
 private:
     std::shared_ptr<TopicManager> m_topicManager;
-    std::shared_ptr<MessageFactory> m_messageFactory;
-    std::shared_ptr<AMOPRequestFactory> m_requestFactory;
+    std::shared_ptr<AMOPMessageFactory> m_messageFactory;
+    std::shared_ptr<bcos::protocol::AMOPRequestFactory> m_requestFactory;
     std::shared_ptr<Timer> m_timer;
     bcos::gateway::P2PInterface::Ptr m_network;
     bcos::gateway::P2pID m_p2pNodeID;
