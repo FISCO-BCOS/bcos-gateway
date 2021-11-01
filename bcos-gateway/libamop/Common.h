@@ -64,5 +64,10 @@ inline std::string randomChoose(std::vector<std::string> _datas)
     std::shuffle(_datas.begin(), _datas.end(), e);
     return *(_datas.begin());
 }
+
+inline std::string shortHex(std::string const& _nodeID)
+{
+    return _nodeID.substr(0, 8);
+}
 }  // namespace amop
 }  // namespace bcos
