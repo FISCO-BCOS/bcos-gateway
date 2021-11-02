@@ -131,6 +131,7 @@ public:
 
     // for multi-group support
     virtual void updateFrontServiceInfo(bcos::group::GroupInfo::Ptr) {}
+    void queryLocalNodeIDsByGroup(const std::string& _groupID, bcos::crypto::NodeIDs& _nodeIDs);
 
 protected:
     P2pID m_p2pNodeID;

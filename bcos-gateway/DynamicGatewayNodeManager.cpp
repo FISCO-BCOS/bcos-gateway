@@ -30,6 +30,7 @@ void DynamicGatewayNodeManager::updateFrontServiceInfo()
     {
         return;
     }
+    bool updated = false;
     UpgradableGuard l(x_frontServiceInfos);
     for (auto pnodesInfo = m_frontServiceInfos.begin(); pnodesInfo != m_frontServiceInfos.end();)
     {
@@ -41,6 +42,7 @@ void DynamicGatewayNodeManager::updateFrontServiceInfo()
             {
                 UpgradeGuard ul(l);
                 pFrontService = nodesInfo.erase(pFrontService);
+                updated = true;
                 continue;
             }
             pFrontService++;
@@ -49,10 +51,16 @@ void DynamicGatewayNodeManager::updateFrontServiceInfo()
         {
             UpgradeGuard ul(l);
             pnodesInfo = m_frontServiceInfos.erase(pnodesInfo);
+            updated = true;
             continue;
         }
         pnodesInfo++;
     }
+    if (!updated)
+    {
+        return;
+    }
+    notifyNodeIDs2FrontService();
 }
 
 void DynamicGatewayNodeManager::updateFrontServiceInfo(bcos::group::GroupInfo::Ptr _groupInfo)
@@ -60,6 +68,7 @@ void DynamicGatewayNodeManager::updateFrontServiceInfo(bcos::group::GroupInfo::P
     UpgradableGuard l(x_frontServiceInfos);
     auto const& groupID = _groupInfo->groupID();
     auto const& nodeInfos = _groupInfo->nodeInfos();
+    bool frontServiceUpdated = false;
     for (auto const& it : nodeInfos)
     {
         // the node is not-started
@@ -86,6 +95,12 @@ void DynamicGatewayNodeManager::updateFrontServiceInfo(bcos::group::GroupInfo::P
             << LOG_DESC("updateFrontServiceInfo: insert frontService for the started node")
             << LOG_KV("nodeId", nodeInfo->nodeID()) << LOG_KV("serviceName", serviceName)
             << printNodeInfo(nodeInfo);
+        frontServiceUpdated = true;
         increaseSeq();
     }
+    if (!frontServiceUpdated)
+    {
+        return;
+    }
+    notifyNodeIDs2FrontService();
 }
