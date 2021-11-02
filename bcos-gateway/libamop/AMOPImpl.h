@@ -72,8 +72,8 @@ public:
         bcos::gateway::P2PSession::Ptr _session,
         std::shared_ptr<bcos::gateway::P2PMessage> _message);
 
-    virtual TopicManager::Ptr topicManager(){return m_topicManager;}
-    
+    virtual TopicManager::Ptr topicManager() { return m_topicManager; }
+
 protected:
     virtual void dispatcherAMOPMessage(bcos::gateway::NetworkException const& _e,
         bcos::gateway::P2PSession::Ptr _session,
