@@ -506,9 +506,26 @@ bool GatewayNodeManager::queryP2pIDsByGroupID(const std::string& _groupID, std::
     return true;
 }
 
+void GatewayNodeManager::queryLocalNodeIDsByGroup(
+    const std::string& _groupID, bcos::crypto::NodeIDs& _nodeIDs)
+{
+    ReadGuard l(x_frontServiceInfos);
+    if (!m_frontServiceInfos.count(_groupID))
+    {
+        return;
+    }
+    for (auto const& item : m_frontServiceInfos[_groupID])
+    {
+        auto bytes = bcos::fromHexString(item.first);
+        _nodeIDs.emplace_back(m_keyFactory->createKey(*bytes.get()));
+    }
+}
+
 bool GatewayNodeManager::queryNodeIDsByGroupID(
     const std::string& _groupID, bcos::crypto::NodeIDs& _nodeIDs)
 {
+    queryLocalNodeIDsByGroup(_groupID, _nodeIDs);
+
     std::lock_guard<std::mutex> l(x_peerGatewayNodes);
 
     auto it = m_peerGatewayNodes.find(_groupID);
@@ -526,7 +543,6 @@ bool GatewayNodeManager::queryNodeIDsByGroupID(
             _nodeIDs.push_back(nodeID);
         }
     }
-
     return true;
 }
 
