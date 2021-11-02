@@ -51,7 +51,6 @@ ssize_t AMOPMessage::decode(bcos::bytesConstRef _buffer)
             << LOG_KV("data", *toHexString(_buffer));
         return -1;
     }
-
     std::size_t offset = 0;
     m_type = boost::asio::detail::socket_ops::network_to_host_short(
         *((uint16_t*)(_buffer.data() + offset)));

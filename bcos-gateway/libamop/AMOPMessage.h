@@ -54,6 +54,7 @@ public:
     bytesConstRef data() const { return m_data; }
     void setData(bcos::bytesConstRef _data) { m_data = _data; }
     virtual void setStatus(uint16_t _status) { m_status = _status; }
+    uint16_t status() const { return m_status; }
 
 public:
     bool encode(bytes& _buffer);
