@@ -189,7 +189,13 @@ void AMOPImpl::onReceiveAMOPMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg,
     std::string topic = request->topic();
     std::vector<std::string> clients;
     m_topicManager->queryClientsByTopic(topic, clients);
-    if (clients.empty())
+    bcos::rpc::RPCInterface::Ptr clientService = nullptr;
+    if (!clients.empty())
+    {
+        auto choosedClient = randomChoose(clients);
+        clientService = m_topicManager->createAndGetServiceByClient(choosedClient);
+    }
+    if (!clientService)
     {
         auto amopMsg = m_messageFactory->buildMessage();
         auto buffer = std::make_shared<bcos::bytes>();
@@ -206,10 +212,9 @@ void AMOPImpl::onReceiveAMOPMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg,
                           << LOG_KV("nodeID", shortHex(_nodeID));
         return;
     }
-    auto choosedClient = randomChoose(clients);
+
     AMOP_LOG(INFO) << LOG_DESC("onRecvAMOPMessage") << LOG_KV("topic", topic)
                    << LOG_KV("from", shortHex(_nodeID));
-    auto clientService = m_topicManager->createAndGetServiceByClient(choosedClient);
     clientService->asyncNotifyAMOPMessage(bcos::rpc::AMOPNotifyMessageType::Unicast, topic,
         _msg->data(), [_responseCallback](Error::Ptr&& _error, bytesPointer _responseData) {
             if (!_error || _error->errorCode() == CommonError::SUCCESS)
@@ -242,6 +247,10 @@ void AMOPImpl::onReceiveAMOPBroadcastMessage(P2pID const& _nodeID, AMOPMessage::
     for (const auto& client : clients)
     {
         auto clientService = m_topicManager->createAndGetServiceByClient(client);
+        if (!clientService)
+        {
+            continue;
+        }
         AMOP_LOG(DEBUG) << LOG_BADGE("onRecvAMOPBroadcastMessage")
                         << LOG_DESC("push message to client") << LOG_KV("topic", topic)
                         << LOG_KV("client", client);
