@@ -381,7 +381,8 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session, Message::P
             bcos::crypto::NodeIDPtr srcNodeIDPtr = m_keyFactory->createKey(*srcNodeID.get());
             bcos::crypto::NodeIDPtr dstNodeIDPtr = m_keyFactory->createKey(*dstNodeIDs[0].get());
             gateway->onReceiveP2PMessage(groupID, srcNodeIDPtr, dstNodeIDPtr, bytesConstRefPayload,
-                [message, p2pSession, p2pMessage, serviceWeakPtr](Error::Ptr _error) {
+                [groupID, srcNodeIDPtr, dstNodeIDPtr, message, p2pSession, p2pMessage,
+                    serviceWeakPtr](Error::Ptr _error) {
                     auto servicePtr = serviceWeakPtr.lock();
                     if (!servicePtr)
                     {
@@ -394,7 +395,9 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session, Message::P
                     {
                         SERVICE_LOG(DEBUG)
                             << "onReceiveP2PMessage callback" << LOG_KV("code", _error->errorCode())
-                            << LOG_KV("msg", _error->errorMessage());
+                            << LOG_KV("msg", _error->errorMessage()) << LOG_KV("group", groupID)
+                            << LOG_KV("src", srcNodeIDPtr->shortHex())
+                            << LOG_KV("dst", dstNodeIDPtr->shortHex());
                     }
                     servicePtr->sendRespMessageBySession(
                         bytesConstRef((byte*)errorCode.data(), errorCode.size()), p2pMessage,
