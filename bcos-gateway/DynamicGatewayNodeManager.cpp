@@ -34,12 +34,14 @@ void DynamicGatewayNodeManager::updateFrontServiceInfo()
     UpgradableGuard l(x_frontServiceInfos);
     for (auto pnodesInfo = m_frontServiceInfos.begin(); pnodesInfo != m_frontServiceInfos.end();)
     {
-        auto nodesInfo = pnodesInfo->second;
+        auto& nodesInfo = pnodesInfo->second;
         for (auto pFrontService = nodesInfo.begin(); pFrontService != nodesInfo.end();)
         {
             auto frontService = pFrontService->second;
             if (frontService->unreachable())
             {
+                NODE_MANAGER_LOG(INFO) << LOG_DESC("remove FrontService for disconnect")
+                                       << LOG_KV("node", shortId(pFrontService->first));
                 UpgradeGuard ul(l);
                 pFrontService = nodesInfo.erase(pFrontService);
                 updated = true;
@@ -60,6 +62,7 @@ void DynamicGatewayNodeManager::updateFrontServiceInfo()
     {
         return;
     }
+    increaseSeq();
     notifyNodeIDs2FrontService();
 }
 

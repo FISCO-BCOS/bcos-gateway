@@ -288,9 +288,7 @@ void Gateway::asyncSendMessageByNodeID(const std::string& _groupID,
                 }
                 return;
             }
-
             auto p2pID = randomChooseP2pID();
-
             auto self = shared_from_this();
             auto callback = [self, p2pID](NetworkException e, std::shared_ptr<P2PSession> session,
                                 std::shared_ptr<P2PMessage> message) {
@@ -316,9 +314,9 @@ void Gateway::asyncSendMessageByNodeID(const std::string& _groupID,
                     // message successfully,find another gateway and try again
                     if (respCode != CommonError::SUCCESS)
                     {
-                        GATEWAY_LOG(DEBUG) << LOG_BADGE("Retry") << LOG_KV("p2pid", shortId(p2pID))
-                                           << LOG_KV("errorCode", e.errorCode())
-                                           << LOG_KV("errorMessage", e.what());
+                        GATEWAY_LOG(DEBUG)
+                            << LOG_BADGE("Retry") << LOG_KV("p2pid", shortId(p2pID))
+                            << LOG_KV("errorCode", respCode) << LOG_KV("errorMessage", e.what());
                         // try again
                         self->trySendMessage();
                         return;
