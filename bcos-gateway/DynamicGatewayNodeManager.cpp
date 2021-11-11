@@ -41,7 +41,7 @@ void DynamicGatewayNodeManager::updateFrontServiceInfo()
             if (frontService->unreachable())
             {
                 NODE_MANAGER_LOG(INFO) << LOG_DESC("remove FrontService for disconnect")
-                                       << LOG_KV("node", shortId(pFrontService->first));
+                                       << LOG_KV("node", pFrontService->first);
                 UpgradeGuard ul(l);
                 pFrontService = nodesInfo.erase(pFrontService);
                 updated = true;

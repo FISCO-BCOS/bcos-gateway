@@ -66,7 +66,7 @@ void P2PSession::heartBeat()
             message->setPayload(payload);
 
             P2PSESSION_LOG(DEBUG) << LOG_DESC("P2PSession onHeartBeat")
-                                  << LOG_KV("p2pid", shortId(m_p2pInfo->p2pID))
+                                  << LOG_KV("p2pid", m_p2pInfo->p2pID)
                                   << LOG_KV("endpoint", m_session->nodeIPEndpoint())
                                   << LOG_KV("statusSeq", service->statusSeq());
 

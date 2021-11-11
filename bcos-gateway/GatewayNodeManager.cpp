@@ -194,14 +194,13 @@ void GatewayNodeManager::onReceiveStatusSeq(
 
     if (_statusSeqChanged)
     {
-        NODE_MANAGER_LOG(INFO) << LOG_DESC("onReceiveStatusSeq") << LOG_KV("p2pid", shortId(_p2pID))
+        NODE_MANAGER_LOG(INFO) << LOG_DESC("onReceiveStatusSeq") << LOG_KV("p2pid", _p2pID)
                                << LOG_KV("statusSeq", _statusSeq)
                                << LOG_KV("seqChanged", _statusSeqChanged);
     }
     else
     {
-        NODE_MANAGER_LOG(DEBUG) << LOG_DESC("onReceiveStatusSeq")
-                                << LOG_KV("p2pid", shortId(_p2pID))
+        NODE_MANAGER_LOG(DEBUG) << LOG_DESC("onReceiveStatusSeq") << LOG_KV("p2pid", _p2pID)
                                 << LOG_KV("statusSeq", _statusSeq)
                                 << LOG_KV("seqChanged", _statusSeqChanged);
     }
@@ -262,7 +261,7 @@ void GatewayNodeManager::showAllPeerGatewayNodeIDs()
             {
                 NODE_MANAGER_LOG(INFO)
                     << LOG_DESC("peerGatewayNodes") << LOG_KV("groupID", it->first)
-                    << LOG_KV("nodeID", innerIt->first) << LOG_KV("p2pID", shortId(*innerIt2));
+                    << LOG_KV("nodeID", innerIt->first) << LOG_KV("p2pID", *innerIt2);
             }
         }
     }
@@ -271,7 +270,7 @@ void GatewayNodeManager::showAllPeerGatewayNodeIDs()
 void GatewayNodeManager::updateNodeIDs(const P2pID& _p2pID, uint32_t _seq,
     const std::unordered_map<std::string, std::set<std::string>>& _nodeIDsMap)
 {
-    NODE_MANAGER_LOG(INFO) << LOG_DESC("updateNodeIDs") << LOG_KV("p2pid", shortId(_p2pID))
+    NODE_MANAGER_LOG(INFO) << LOG_DESC("updateNodeIDs") << LOG_KV("p2pid", _p2pID)
                            << LOG_KV("statusSeq", _seq);
 
     {
@@ -453,7 +452,7 @@ void GatewayNodeManager::onRequestNodeIDs(std::string& _nodeIDsJson)
 
 void GatewayNodeManager::onRemoveNodeIDs(const P2pID& _p2pID)
 {
-    NODE_MANAGER_LOG(INFO) << LOG_DESC("onRemoveNodeIDs") << LOG_KV("p2pid", shortId(_p2pID));
+    NODE_MANAGER_LOG(INFO) << LOG_DESC("onRemoveNodeIDs") << LOG_KV("p2pid", _p2pID);
 
     {
         std::lock_guard<std::mutex> l(x_peerGatewayNodes);

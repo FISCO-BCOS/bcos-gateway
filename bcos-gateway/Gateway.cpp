@@ -284,7 +284,7 @@ void Gateway::asyncSendMessageByNodeID(const std::string& _groupID,
                 {
                     GATEWAY_LOG(DEBUG)
                         << LOG_BADGE("Retry") << LOG_DESC("network callback")
-                        << LOG_KV("p2pid", shortId(p2pID)) << LOG_KV("errorCode", e.errorCode())
+                        << LOG_KV("p2pid", p2pID) << LOG_KV("errorCode", e.errorCode())
                         << LOG_KV("errorMessage", e.what());
                     // try again
                     self->trySendMessage();
@@ -301,14 +301,14 @@ void Gateway::asyncSendMessageByNodeID(const std::string& _groupID,
                     if (respCode != CommonError::SUCCESS)
                     {
                         GATEWAY_LOG(DEBUG)
-                            << LOG_BADGE("Retry") << LOG_KV("p2pid", shortId(p2pID))
+                            << LOG_BADGE("Retry") << LOG_KV("p2pid", p2pID)
                             << LOG_KV("errorCode", respCode) << LOG_KV("errorMessage", e.what());
                         // try again
                         self->trySendMessage();
                         return;
                     }
 
-                    GATEWAY_LOG(TRACE) << LOG_BADGE("Retry") << LOG_KV("p2pid", shortId(p2pID))
+                    GATEWAY_LOG(TRACE) << LOG_BADGE("Retry") << LOG_KV("p2pid", p2pID)
                                        << LOG_KV("srcNodeID", self->m_srcNodeID->hex())
                                        << LOG_KV("dstNodeID", self->m_dstNodeID->hex());
                     // send message successfully
