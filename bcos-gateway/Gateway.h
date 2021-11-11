@@ -52,7 +52,8 @@ public:
      * @param _peerRespFunc:
      * @return void
      */
-    virtual void asyncGetPeers(PeerRespFunc _peerRespFunc) override;
+    virtual void asyncGetPeers(
+        std::function<void(Error::Ptr, GatewayInfo::Ptr, GatewayInfosPtr)> _onGetPeers) override;
     /**
      * @brief: get nodeIDs from gateway
      * @param _groupID:

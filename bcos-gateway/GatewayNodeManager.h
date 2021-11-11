@@ -129,9 +129,19 @@ public:
     std::unordered_map<std::string, FrontServiceInfo::Ptr> groupFrontServices(
         std::string const& _groupID);
 
+    // Note: copy for thread-safe
+    std::unordered_map<std::string, std::set<std::string>> nodeIDInfo(
+        std::string const& _p2pNodeID);
+    std::unordered_map<std::string, std::set<std::string>> getLocalNodeIDInfo();
+
     // for multi-group support
     virtual void updateFrontServiceInfo(bcos::group::GroupInfo::Ptr) {}
     void queryLocalNodeIDsByGroup(const std::string& _groupID, bcos::crypto::NodeIDs& _nodeIDs);
+
+protected:
+    void updateNodeIDInfo(std::string const& _p2pNodeID,
+        std::unordered_map<std::string, std::set<std::string>> const& _nodeIDList);
+    void removeNodeIDInfo(std::string const& _p2pNodeID);
 
 protected:
     P2pID m_p2pNodeID;
@@ -150,6 +160,11 @@ protected:
     // groupID => nodeID => FrontServiceInterface
     std::unordered_map<std::string, std::unordered_map<std::string, FrontServiceInfo::Ptr>>
         m_frontServiceInfos;
+
+    // the groupNodeID info
+    // p2pNodeID->groupID->nodeIDList
+    std::map<std::string, std::unordered_map<std::string, std::set<std::string>>> m_nodeIDInfo;
+    SharedMutex x_nodeIDInfo;
 };
 }  // namespace gateway
 }  // namespace bcos

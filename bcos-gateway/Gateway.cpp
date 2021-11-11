@@ -120,41 +120,27 @@ std::shared_ptr<P2PMessage> Gateway::newP2PMessage(
     return message;
 }
 
-/**
- * @brief: get connected peers
- * @param _peerRespFunc:
- * @return void
- */
-void Gateway::asyncGetPeers(PeerRespFunc _peerRespFunc)
+void Gateway::asyncGetPeers(
+    std::function<void(Error::Ptr, GatewayInfo::Ptr, GatewayInfosPtr)> _onGetPeers)
 {
-    std::string peersInfo;
-    // generator json first
-    try
+    if (!_onGetPeers)
     {
-        auto sessions = m_p2pInterface->sessionInfos();
-        Json::Value jSessions = Json::Value(Json::arrayValue);
-        for (const auto& session : sessions)
-        {
-            Json::Value jSession;
-            jSession["p2pID"] = session.p2pInfo.p2pID;
-            jSession["endpoint"] = boost::lexical_cast<std::string>(session.nodeIPEndpoint);
-            jSession["agency"] = session.p2pInfo.agencyName;
-            jSession["p2pNodeName"] = session.p2pInfo.nodeName;
-
-            jSessions.append(jSession);
-        }
-
-        Json::FastWriter writer;
-        peersInfo = writer.write(jSessions);
-
-        GATEWAY_LOG(INFO) << LOG_DESC("asyncGetPeers") << LOG_KV("peersInfo", peersInfo);
+        return;
     }
-    catch (const std::exception& e)
+    auto sessionInfos = m_p2pInterface->sessionInfos();
+    GatewayInfosPtr peerGatewayInfos = std::make_shared<GatewayInfos>();
+    for (auto const& info : sessionInfos)
     {
-        GATEWAY_LOG(ERROR) << LOG_DESC("asyncGetPeers error: " + boost::diagnostic_information(e));
+        auto gatewayInfo = std::make_shared<GatewayInfo>(info);
+        auto nodeIDInfo = m_gatewayNodeManager->nodeIDInfo(info.p2pID);
+        gatewayInfo->setNodeIDInfo(std::move(nodeIDInfo));
+        peerGatewayInfos->emplace_back(gatewayInfo);
     }
-
-    _peerRespFunc(nullptr, peersInfo);
+    auto localP2pInfo = m_p2pInterface->localP2pInfo();
+    auto localGatewayInfo = std::make_shared<GatewayInfo>(localP2pInfo);
+    auto loaclNodeIDInfo = m_gatewayNodeManager->getLocalNodeIDInfo();
+    localGatewayInfo->setNodeIDInfo(std::move(loaclNodeIDInfo));
+    _onGetPeers(nullptr, localGatewayInfo, peerGatewayInfos);
 }
 
 /**
@@ -298,7 +284,7 @@ void Gateway::asyncSendMessageByNodeID(const std::string& _groupID,
                 {
                     GATEWAY_LOG(DEBUG)
                         << LOG_BADGE("Retry") << LOG_DESC("network callback")
-                        << LOG_KV("p2pid", shortId(p2pID)) << LOG_KV("errorCode", e.errorCode())
+                        << LOG_KV("p2pid", p2pID) << LOG_KV("errorCode", e.errorCode())
                         << LOG_KV("errorMessage", e.what());
                     // try again
                     self->trySendMessage();
@@ -315,14 +301,14 @@ void Gateway::asyncSendMessageByNodeID(const std::string& _groupID,
                     if (respCode != CommonError::SUCCESS)
                     {
                         GATEWAY_LOG(DEBUG)
-                            << LOG_BADGE("Retry") << LOG_KV("p2pid", shortId(p2pID))
+                            << LOG_BADGE("Retry") << LOG_KV("p2pid", p2pID)
                             << LOG_KV("errorCode", respCode) << LOG_KV("errorMessage", e.what());
                         // try again
                         self->trySendMessage();
                         return;
                     }
 
-                    GATEWAY_LOG(TRACE) << LOG_BADGE("Retry") << LOG_KV("p2pid", shortId(p2pID))
+                    GATEWAY_LOG(TRACE) << LOG_BADGE("Retry") << LOG_KV("p2pid", p2pID)
                                        << LOG_KV("srcNodeID", self->m_srcNodeID->hex())
                                        << LOG_KV("dstNodeID", self->m_dstNodeID->hex());
                     // send message successfully

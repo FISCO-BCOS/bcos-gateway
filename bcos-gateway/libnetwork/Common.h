@@ -75,24 +75,12 @@ enum P2PExceptionType
 
 //
 using P2pID = std::string;
-inline std::string shortId(P2pID const& _p2pNodeId)
-{
-    return _p2pNodeId.substr(0, std::min((size_t)8, _p2pNodeId.size())) + "...";
-}
 using P2pIDs = std::set<std::string>;
 struct Options
 {
     Options() {}
     Options(uint32_t _timeout) : timeout(_timeout) {}
     uint32_t timeout = 0;  ///< The timeout value of async function, in milliseconds.
-};
-
-/// node info obtained from the certificate
-struct P2PInfo
-{
-    P2pID p2pID;
-    std::string agencyName;
-    std::string nodeName;
 };
 
 class NetworkException : public std::exception
@@ -150,60 +138,6 @@ inline std::string reasonOf(DisconnectReason _r)
     default:
         return "Unknown reason.";
     }
-}
-
-// using NodeIPEndpoint = boost::asio::ip::tcp::endpoint;
-/**
- * @brief client end endpoint. Node will connect to NodeIPEndpoint.
- */
-struct NodeIPEndpoint
-{
-    NodeIPEndpoint() = default;
-    NodeIPEndpoint(const NodeIPEndpoint& _nodeIPEndpoint) = default;
-    NodeIPEndpoint(bi::address _addr, uint16_t _port)
-      : m_host(_addr.to_string()), m_port(_port), m_ipv6(_addr.is_v6())
-    {}
-
-    virtual ~NodeIPEndpoint() = default;
-    NodeIPEndpoint(const boost::asio::ip::tcp::endpoint& _endpoint)
-    {
-        m_host = _endpoint.address().to_string();
-        m_port = _endpoint.port();
-        m_ipv6 = _endpoint.address().is_v6();
-    }
-    bool operator<(const NodeIPEndpoint& rhs) const
-    {
-        if (m_host + std::to_string(m_port) < rhs.m_host + std::to_string(rhs.m_port))
-        {
-            return true;
-        }
-        return false;
-    }
-    bool operator==(const NodeIPEndpoint& rhs) const
-    {
-        return (m_host + std::to_string(m_port) == rhs.m_host + std::to_string(rhs.m_port));
-    }
-    operator boost::asio::ip::tcp::endpoint() const
-    {
-        return boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(m_host), m_port);
-    }
-
-    // Get the port associated with the endpoint.
-    uint16_t port() const { return m_port; };
-
-    // Get the IP address associated with the endpoint.
-    std::string address() const { return m_host; };
-    bool isIPv6() const { return m_ipv6; }
-
-    std::string m_host;
-    uint16_t m_port;
-    bool m_ipv6 = false;
-};
-
-inline std::ostream& operator<<(std::ostream& _out, NodeIPEndpoint const& _endpoint)
-{
-    _out << _endpoint.address() << ":" << _endpoint.port();
-    return _out;
 }
 }  // namespace gateway
 }  // namespace bcos
