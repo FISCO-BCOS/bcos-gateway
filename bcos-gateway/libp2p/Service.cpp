@@ -561,17 +561,16 @@ void Service::asyncBroadcastMessage(P2PMessage::Ptr message, Options options)
     }
 }
 
-P2PSessionInfos Service::sessionInfos()
+P2PInfos Service::sessionInfos()
 {
-    P2PSessionInfos infos;
+    P2PInfos infos;
     try
     {
         RecursiveGuard l(x_sessions);
         auto s = m_sessions;
         for (auto const& i : s)
         {
-            infos.push_back(
-                P2PSessionInfo(i.second->p2pInfo(), i.second->session()->nodeIPEndpoint()));
+            infos.push_back(i.second->p2pInfo());
         }
     }
     catch (std::exception& e)

@@ -35,18 +35,23 @@ public:
     virtual SessionFace::Ptr session() { return m_session; }
     virtual void setSession(std::shared_ptr<SessionFace> session) { m_session = session; }
 
-    virtual P2pID p2pID() { return m_p2pInfo.p2pID; }
-    virtual void setP2PInfo(P2PInfo const& p2pInfo) { m_p2pInfo = p2pInfo; }
-    virtual P2PInfo const& p2pInfo() const& { return m_p2pInfo; }
+    virtual P2pID p2pID() { return m_p2pInfo->p2pID; }
+    // Note: the p2pInfo must be setted after session setted
+    virtual void setP2PInfo(P2PInfo const& p2pInfo)
+    {
+        *m_p2pInfo = p2pInfo;
+        m_p2pInfo->nodeIPEndpoint = m_session->nodeIPEndpoint();
+    }
+    virtual P2PInfo const& p2pInfo() const& { return *m_p2pInfo; }
+    virtual std::shared_ptr<P2PInfo> mutableP2pInfo() { return m_p2pInfo; }
 
     virtual std::weak_ptr<Service> service() { return m_service; }
     virtual void setService(std::weak_ptr<Service> service) { m_service = service; }
 
 private:
     SessionFace::Ptr m_session;
-    /// gateway p2p info;
-    P2PInfo m_p2pInfo;
-
+    /// gateway p2p info
+    std::shared_ptr<P2PInfo> m_p2pInfo;
     std::weak_ptr<Service> m_service;
     std::shared_ptr<boost::asio::deadline_timer> m_timer;
     bool m_run = false;

@@ -290,7 +290,7 @@ void GatewayNodeManager::updateNodeIDs(const P2pID& _p2pID, uint32_t _seq,
         m_p2pID2Seq[_p2pID] = _seq;
         showAllPeerGatewayNodeIDs();
     }
-
+    updateNodeIDInfo(_p2pID, _nodeIDsMap);
     // notify nodeIDs to front service
     notifyNodeIDs2FrontService();
 }
@@ -333,6 +333,7 @@ void GatewayNodeManager::removeNodeIDsByP2PID(const std::string& _p2pID)
             ++it;
         }
     }  // for (auto it
+    removeNodeIDInfo(_p2pID);
     showAllPeerGatewayNodeIDs();
 }
 
@@ -566,4 +567,57 @@ std::unordered_map<std::string, FrontServiceInfo::Ptr> GatewayNodeManager::group
         return std::unordered_map<std::string, FrontServiceInfo::Ptr>();
     }
     return m_frontServiceInfos[_groupID];
+}
+
+void GatewayNodeManager::updateNodeIDInfo(std::string const& _p2pNodeID,
+    std::unordered_map<std::string, std::set<std::string>> const& _nodeIDList)
+{
+    WriteGuard l(x_nodeIDInfo);
+    m_nodeIDInfo[_p2pNodeID] = _nodeIDList;
+}
+
+void GatewayNodeManager::removeNodeIDInfo(std::string const& _p2pNodeID)
+{
+    UpgradableGuard l(x_nodeIDInfo);
+    if (m_nodeIDInfo.count(_p2pNodeID))
+    {
+        UpgradeGuard ul(l);
+        m_nodeIDInfo.erase(_p2pNodeID);
+    }
+}
+
+std::unordered_map<std::string, std::set<std::string>> GatewayNodeManager::getLocalNodeIDInfo()
+{
+    std::unordered_map<std::string, std::set<std::string>> nodeIDInfo;
+    ReadGuard l(x_frontServiceInfos);
+    for (auto const& it : m_frontServiceInfos)
+    {
+        auto groupID = it.first;
+        if (!nodeIDInfo.count(groupID))
+        {
+            nodeIDInfo[groupID] = std::set<std::string>();
+        }
+        auto const& infos = it.second;
+        for (auto const& nodeIt : infos)
+        {
+            nodeIDInfo[groupID].insert(nodeIt.first);
+        }
+    }
+    return nodeIDInfo;
+}
+
+std::unordered_map<std::string, std::set<std::string>> GatewayNodeManager::nodeIDInfo(
+    std::string const& _p2pNodeID)
+{
+    // the local nodeID info
+    if (_p2pNodeID == m_p2pNodeID)
+    {
+        return getLocalNodeIDInfo();
+    }
+    ReadGuard l(x_nodeIDInfo);
+    if (m_nodeIDInfo.count(_p2pNodeID))
+    {
+        return m_nodeIDInfo[_p2pNodeID];
+    }
+    return std::unordered_map<std::string, std::set<std::string>>();
 }

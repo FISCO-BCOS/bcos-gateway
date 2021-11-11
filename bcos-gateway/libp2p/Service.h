@@ -66,8 +66,13 @@ public:
         }
     }
 
-    P2PSessionInfos sessionInfos() override;  ///< Only connected node
-
+    P2PInfos sessionInfos() override;  ///< Only connected node
+    P2PInfo localP2pInfo() override
+    {
+        auto p2pInfo = m_host->p2pInfo();
+        p2pInfo.p2pID = m_nodeID;
+        return p2pInfo;
+    }
     bool isConnected(P2pID const& nodeID) const override;
 
     virtual std::shared_ptr<Host> host() override { return m_host; }

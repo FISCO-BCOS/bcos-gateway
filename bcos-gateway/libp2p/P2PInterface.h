@@ -49,7 +49,8 @@ public:
 
     virtual void asyncBroadcastMessage(std::shared_ptr<P2PMessage> message, Options options) = 0;
 
-    virtual P2PSessionInfos sessionInfos() = 0;
+    virtual P2PInfos sessionInfos() = 0;
+    virtual P2PInfo localP2pInfo() = 0;
 
     virtual bool isConnected(P2pID const& _nodeID) const = 0;
 
