@@ -123,6 +123,8 @@ BOOST_AUTO_TEST_CASE(test_initConfig)
         std::string configIni("../test/unittests/data/config/config_ipv4.ini");
         auto config = std::make_shared<GatewayConfig>();
         config->initConfig(configIni);
+        config->loadP2pConnectedNodes();
+
         BOOST_CHECK_EQUAL(config->listenIP(), "127.0.0.1");
         BOOST_CHECK_EQUAL(config->listenPort(), 12345);
         BOOST_CHECK_EQUAL(config->smSSL(), false);
@@ -142,6 +144,8 @@ BOOST_AUTO_TEST_CASE(test_initSMConfig)
 
         auto config = std::make_shared<GatewayConfig>();
         config->initConfig(configIni);
+        config->loadP2pConnectedNodes();
+
         BOOST_CHECK_EQUAL(config->listenIP(), "0.0.0.0");
         BOOST_CHECK_EQUAL(config->listenPort(), 54321);
         BOOST_CHECK_EQUAL(config->smSSL(), true);
