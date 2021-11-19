@@ -179,29 +179,40 @@ void GatewayConfig::initP2PConfig(const boost::property_tree::ptree& _pt)
     {
         m_nodePath = _pt.get<std::string>("p2p.nodes_path", "./");
     }
-    std::string file = _pt.get<std::string>("p2p.nodes_file", "nodes.json");
 
-    // load p2p connected nodes
-    std::set<NodeIPEndpoint> nodes;
-    auto jsonContent = readContentsToString(boost::filesystem::path(m_nodePath + "/" + file));
-    if (!jsonContent || jsonContent->empty())
-    {
-        BOOST_THROW_EXCEPTION(InvalidParameter() << errinfo_comment(
-                                  "initP2PConfig: unable to read nodes json file, path=" +
-                                  (m_nodePath + "/" + file)));
-    }
-
-    parseConnectedJson(*jsonContent.get(), nodes);
+    m_nodeFileName = _pt.get<std::string>("p2p.nodes_file", "nodes.json");
 
     m_smSSL = smSSL;
     m_listenIP = listenIP;
     m_listenPort = (uint16_t)listenPort;
+
+    GATEWAY_CONFIG_LOG(INFO) << LOG_DESC("initP2PConfig ok!") << LOG_KV("listenIP", listenIP)
+                             << LOG_KV("listenPort", listenPort) << LOG_KV("smSSL", smSSL)
+                             << LOG_KV("nodePath", m_nodePath)
+                             << LOG_KV("nodeFileName", m_nodeFileName);
+}
+
+// load p2p connected peers
+void GatewayConfig::loadP2pConnectedNodes()
+{
+    std::string nodeFilePath = m_nodePath + "/" + m_nodeFileName;
+    // load p2p connected nodes
+    std::set<NodeIPEndpoint> nodes;
+    auto jsonContent = readContentsToString(boost::filesystem::path(nodeFilePath));
+    if (!jsonContent || jsonContent->empty())
+    {
+        BOOST_THROW_EXCEPTION(
+            InvalidParameter() << errinfo_comment(
+                "initP2PConfig: unable to read nodes json file, path=" + nodeFilePath));
+    }
+
+    parseConnectedJson(*jsonContent.get(), nodes);
     m_connectedNodes = nodes;
 
-    GATEWAY_CONFIG_LOG(DEBUG) << LOG_DESC("initP2PConfig ok!") << LOG_KV("listenIP", listenIP)
-                              << LOG_KV("listenPort", listenPort) << LOG_KV("smSSL", smSSL)
-                              << LOG_KV("jsonPath", m_nodePath) << LOG_KV("jsonFile", file)
-                              << LOG_KV("nodes.size()", nodes.size());
+    GATEWAY_CONFIG_LOG(INFO) << LOG_DESC("loadP2pConnectedNodes ok!")
+                             << LOG_KV("nodePath", m_nodePath)
+                             << LOG_KV("nodeFileName", m_nodeFileName)
+                             << LOG_KV("nodes", nodes.size());
 }
 
 /// loads ca configuration items from the configuration file
@@ -214,18 +225,17 @@ void GatewayConfig::initCertConfig(const boost::property_tree::ptree& _pt)
       ; the ca certificate file
       ca_cert=ca.crt
       ; the node private key file
-      node_key=node.key
+      node_key=ssl.key
       ; the node certificate file
-      node_cert=node.crt
+      node_cert=ssl.crt
     */
     if (m_certPath.size() == 0)
     {
         m_certPath = _pt.get<std::string>("cert.ca_path", "./");
     }
     std::string caCertFile = m_certPath + "/" + _pt.get<std::string>("cert.ca_cert", "ca.crt");
-    std::string nodeCertFile =
-        m_certPath + "/" + _pt.get<std::string>("cert.node_cert", "node.crt");
-    std::string nodeKeyFile = m_certPath + "/" + _pt.get<std::string>("cert.node_key", "node.key");
+    std::string nodeCertFile = m_certPath + "/" + _pt.get<std::string>("cert.node_cert", "ssl.crt");
+    std::string nodeKeyFile = m_certPath + "/" + _pt.get<std::string>("cert.node_key", "ssl.key");
 
     GATEWAY_CONFIG_LOG(INFO) << LOG_DESC("initCertConfig") << LOG_KV("ca_path", m_certPath)
                              << LOG_KV("ca_cert", caCertFile) << LOG_KV("node_cert", nodeCertFile)
@@ -257,13 +267,13 @@ void GatewayConfig::initSMCertConfig(const boost::property_tree::ptree& _pt)
     ; the ca certificate file
     sm_ca_cert=sm_ca.crt
     ; the node private key file
-    sm_node_key=sm_node.key
+    sm_node_key=sm_ssl.key
     ; the node certificate file
-    sm_node_cert=sm_node.crt
+    sm_node_cert=sm_ssl.crt
     ; the node private key file
-    sm_ennode_key=sm_ennode.key
+    sm_ennode_key=sm_enssl.key
     ; the node certificate file
-    sm_ennode_cert=sm_ennode.crt
+    sm_ennode_cert=sm_enssl.crt
     */
     // not set the certPath, load from the configuration
     if (m_certPath.size() == 0)
@@ -273,13 +283,13 @@ void GatewayConfig::initSMCertConfig(const boost::property_tree::ptree& _pt)
     std::string smCaCertFile =
         m_certPath + "/" + _pt.get<std::string>("cert.sm_ca_cert", "sm_ca.crt");
     std::string smNodeCertFile =
-        m_certPath + "/" + _pt.get<std::string>("cert.sm_node_cert", "sm_node.crt");
+        m_certPath + "/" + _pt.get<std::string>("cert.sm_node_cert", "sm_ssl.crt");
     std::string smNodeKeyFile =
-        m_certPath + "/" + _pt.get<std::string>("cert.sm_node_key", "sm_node.key");
+        m_certPath + "/" + _pt.get<std::string>("cert.sm_node_key", "sm_ssl.key");
     std::string smEnNodeCertFile =
-        m_certPath + "/" + _pt.get<std::string>("cert.sm_ennode_cert", "sm_ennode.crt");
+        m_certPath + "/" + _pt.get<std::string>("cert.sm_ennode_cert", "sm_enssl.crt");
     std::string smEnNodeKeyFile =
-        m_certPath + "/" + _pt.get<std::string>("cert.sm_ennode_key", "sm_ennode.key");
+        m_certPath + "/" + _pt.get<std::string>("cert.sm_ennode_key", "sm_enssl.key");
 
     checkFileExist(smCaCertFile);
     checkFileExist(smNodeCertFile);

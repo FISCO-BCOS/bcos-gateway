@@ -48,11 +48,14 @@ public:
      * @return void
      */
     void initConfig(std::string const& _configPath);
+
     void setCertPath(std::string const& _certPath) { m_certPath = _certPath; }
     void setNodePath(std::string const& _nodePath) { m_nodePath = _nodePath; }
+    void setNodeFileName(const std::string& _nodeFileName) { m_nodeFileName = _nodeFileName; }
 
     std::string const& certPath() const { return m_certPath; }
     std::string const& nodePath() const { return m_nodePath; }
+    std::string const& nodeFileName() const { return m_nodeFileName; }
 
 public:
     // check if the port valid
@@ -67,6 +70,8 @@ public:
     void initSMCertConfig(const boost::property_tree::ptree& _pt);
     // check if file exist, exception will be throw if the file not exist
     void checkFileExist(const std::string& _path);
+    // load p2p connected peers
+    void loadP2pConnectedNodes();
 
 public:
     std::string listenIP() const { return m_listenIP; }
@@ -92,8 +97,10 @@ private:
     // cert config for ssl connection
     CertConfig m_certConfig;
     SMCertConfig m_smCertConfig;
+
     std::string m_certPath;
     std::string m_nodePath;
+    std::string m_nodeFileName;
 };
 
 }  // namespace gateway

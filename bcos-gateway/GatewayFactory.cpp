@@ -232,6 +232,7 @@ std::shared_ptr<Gateway> GatewayFactory::buildGateway(
     auto config = std::make_shared<GatewayConfig>();
     // load config
     config->initConfig(_configPath);
+    config->loadP2pConnectedNodes();
     return buildGateway(config, _localMode);
 }
 
