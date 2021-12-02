@@ -155,9 +155,8 @@ void Service::onConnect(
     if (e.errorCode())
     {
         SERVICE_LOG(WARNING) << LOG_DESC("onConnect") << LOG_KV("errorCode", e.errorCode())
-                             << LOG_KV("p2pid", p2pID)
-                             << LOG_KV("nodeName", p2pInfo.nodeName) << LOG_KV("endpoint", peer)
-                             << LOG_KV("errorMessage", e.what());
+                             << LOG_KV("p2pid", p2pID) << LOG_KV("nodeName", p2pInfo.nodeName)
+                             << LOG_KV("endpoint", peer) << LOG_KV("errorMessage", e.what());
 
         return;
     }
@@ -250,8 +249,7 @@ void Service::sendMessageBySession(
     _p2pSession->session()->asyncSendMessage(p2pMessage);
 
     SERVICE_LOG(TRACE) << "sendMessageBySession" << LOG_KV("seq", p2pMessage->seq())
-                       << LOG_KV("packetType", _packetType)
-                       << LOG_KV("p2pid", _p2pSession->p2pID())
+                       << LOG_KV("packetType", _packetType) << LOG_KV("p2pid", _p2pSession->p2pID())
                        << LOG_KV("payload.size()", _payload.size());
 }
 
@@ -293,8 +291,7 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session, Message::P
         if (e.errorCode())
         {
             SERVICE_LOG(WARNING) << LOG_DESC("disconnect error P2PSession")
-                                 << LOG_KV("p2pid", p2pID)
-                                 << LOG_KV("endpoint", nodeIPEndpoint)
+                                 << LOG_KV("p2pid", p2pID) << LOG_KV("endpoint", nodeIPEndpoint)
                                  << LOG_KV("errorCode", e.errorCode())
                                  << LOG_KV("errorMessage", e.what());
 
@@ -324,9 +321,8 @@ void Service::onMessage(NetworkException e, SessionFace::Ptr session, Message::P
         auto bytesConstRefPayload = bytesConstRef(payload->data(), payload->size());
         const auto& dstNodeIDs = options->dstNodeIDs();
 
-        SERVICE_LOG(TRACE) << LOG_DESC("onMessage receive message")
-                           << LOG_KV("p2pid", p2pID) << LOG_KV("endpoint", nodeIPEndpoint)
-                           << LOG_KV("seq", p2pMessage->seq())
+        SERVICE_LOG(TRACE) << LOG_DESC("onMessage receive message") << LOG_KV("p2pid", p2pID)
+                           << LOG_KV("endpoint", nodeIPEndpoint) << LOG_KV("seq", p2pMessage->seq())
                            << LOG_KV("version", p2pMessage->version())
                            << LOG_KV("packetType", p2pMessage->packetType());
 
@@ -482,6 +478,12 @@ P2PMessage::Ptr Service::sendMessageByNodeID(P2pID nodeID, P2PMessage::Ptr messa
     return P2PMessage::Ptr();
 }
 
+bool Service::connected(std::string const& _nodeID)
+{
+    RecursiveGuard l(x_sessions);
+    auto it = m_sessions.find(_nodeID);
+    return (it != m_sessions.end() && it->second->actived());
+}
 void Service::asyncSendMessageByNodeID(
     P2pID nodeID, P2PMessage::Ptr message, CallbackFuncWithSession callback, Options options)
 {
@@ -521,6 +523,13 @@ void Service::asyncSendMessageByNodeID(
         }
         else
         {
+            // TODO: uncomment here(Must check all related interface handle the nullptr)
+            /*
+            if(callback)
+            {
+                NetworkException e(-1, "send message failed for no network established");
+                callback(e, nullptr, nullptr);
+            }*/
             SERVICE_LOG(WARNING) << "Node inactived" << LOG_KV("nodeid", nodeID);
         }
     }
@@ -617,6 +626,16 @@ std::shared_ptr<P2PMessage> Service::newP2PMessage(int16_t _type, bytesConstRef 
 void Service::asyncSendMessageByP2PNodeID(int16_t _type, P2pID _dstNodeID, bytesConstRef _payload,
     Options _options, P2PResponseCallback _callback)
 {
+    if (!connected(_dstNodeID))
+    {
+        if (_callback)
+        {
+            auto errorMsg =
+                "send message to " + _dstNodeID + " failed for no connection established";
+            _callback(std::make_shared<bcos::Error>(-1, errorMsg), 0, nullptr);
+        }
+        return;
+    }
     auto p2pMessage = newP2PMessage(_type, _payload);
     asyncSendMessageByNodeID(
         _dstNodeID, p2pMessage,

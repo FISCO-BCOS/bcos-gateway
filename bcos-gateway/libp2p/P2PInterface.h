@@ -91,6 +91,8 @@ public:
     using MessageHandler =
         std::function<void(NetworkException, std::shared_ptr<P2PSession>, P2PMessage::Ptr)>;
     virtual void registerHandlerByMsgType(int16_t _type, MessageHandler const& _msgHandler) = 0;
+
+    virtual bool connected(std::string const& _nodeID) = 0;
 };
 
 }  // namespace gateway

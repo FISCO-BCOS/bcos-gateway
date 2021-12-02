@@ -145,6 +145,8 @@ public:
         return nullptr;
     }
 
+    bool connected(std::string const& _nodeID) override;
+
 private:
     std::shared_ptr<P2PMessage> newP2PMessage(int16_t _type, bytesConstRef _payload);
 
