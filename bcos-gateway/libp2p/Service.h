@@ -33,8 +33,8 @@ public:
 
     using Ptr = std::shared_ptr<Service>;
 
-    virtual void start() override;
-    virtual void stop() override;
+    void start() override;
+    void stop() override;
     virtual void heartBeat();
 
     virtual bool actived() { return m_run; }
@@ -75,7 +75,7 @@ public:
     }
     bool isConnected(P2pID const& nodeID) const override;
 
-    virtual std::shared_ptr<Host> host() override { return m_host; }
+    std::shared_ptr<Host> host() override { return m_host; }
     virtual void setHost(std::shared_ptr<Host> host) { m_host = host; }
 
     std::shared_ptr<MessageFactory> messageFactory() override { return m_messageFactory; }

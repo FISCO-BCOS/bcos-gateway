@@ -164,7 +164,7 @@ void AMOPImpl::onReceiveRequestTopicMessage(P2pID const& _nodeID, AMOPMessage::P
                 if (_error && (_error->errorCode() != CommonError::SUCCESS))
                 {
                     AMOP_LOG(WARNING) << LOG_BADGE("onReceiveRequestTopicMessage")
-                                      << LOG_DESC("callback respones error")
+                                      << LOG_DESC("callback response error")
                                       << LOG_KV("dstNode", shortHex(_nodeID))
                                       << LOG_KV("errorCode", _error->errorCode())
                                       << LOG_KV("errorMessage", _error->errorMessage());
@@ -446,7 +446,7 @@ void AMOPImpl::dispatcherAMOPMessage(
         onReceiveAMOPBroadcastMessage(fromNodeID, amopMessage);
         break;
     default:
-        AMOP_LOG(WARNING) << LOG_DESC("unkown AMOP message type") << LOG_KV("type", amopMsgType);
+        AMOP_LOG(WARNING) << LOG_DESC("unknown AMOP message type") << LOG_KV("type", amopMsgType);
     }
 }
 

@@ -46,7 +46,7 @@ std::vector<bcos::front::FrontService::Ptr> buildFrontServiceVector()
         auto frontService = buildFrontService(groupID, nodeIDBase + std::to_string(i),
             configPathBase + std::to_string(i) + "/config.ini");
         auto frontServiceWeakptr = std::weak_ptr<bcos::front::FrontService>(frontService);
-        // register message dispather for front service
+        // register message dispatcher for front service
         frontService->registerModuleMessageDispatcher(
             bcos::protocol::ModuleID::AMOP, [frontServiceWeakptr](bcos::crypto::NodeIDPtr _nodeID,
                                                 const std::string _id, bytesConstRef _data) {
@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(test_FrontServiceEcho)
         frontService->asyncGetNodeIDs([frontService](Error::Ptr _error,
                                           std::shared_ptr<const crypto::NodeIDs> _nodeIDs) {
             BOOST_CHECK(_error == nullptr);
-            BOOST_CHECK_EQUAL(_nodeIDs->size(), nodeCount - 1);
+            BOOST_CHECK_EQUAL(_nodeIDs->size(), nodeCount);
 
             for (const auto& nodeID : *_nodeIDs)
             {
@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE(test_FrontServiceTimeout)
         frontService->asyncGetNodeIDs([frontService](Error::Ptr _error,
                                           std::shared_ptr<const crypto::NodeIDs> _nodeIDs) {
             BOOST_CHECK(_error == nullptr);
-            BOOST_CHECK_EQUAL(_nodeIDs->size(), nodeCount - 1);
+            BOOST_CHECK_EQUAL(_nodeIDs->size(), nodeCount);
 
             for (const auto& nodeID : *_nodeIDs)
             {

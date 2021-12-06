@@ -52,7 +52,7 @@ public:
      * @param _peerRespFunc:
      * @return void
      */
-    virtual void asyncGetPeers(
+    void asyncGetPeers(
         std::function<void(Error::Ptr, GatewayInfo::Ptr, GatewayInfosPtr)> _onGetPeers) override;
     /**
      * @brief: get nodeIDs from gateway
@@ -60,8 +60,7 @@ public:
      * @param _getNodeIDsFunc: get nodeIDs callback
      * @return void
      */
-    virtual void asyncGetNodeIDs(
-        const std::string& _groupID, GetNodeIDsFunc _getNodeIDsFunc) override;
+    void asyncGetNodeIDs(const std::string& _groupID, GetNodeIDsFunc _getNodeIDsFunc) override;
     /**
      * @brief: construct Message object
      */
@@ -98,9 +97,9 @@ public:
      * @param _errorRespFunc: error func
      * @return void
      */
-    virtual void asyncSendMessageByNodeID(const std::string& _groupID,
-        bcos::crypto::NodeIDPtr _srcNodeID, bcos::crypto::NodeIDPtr _dstNodeID,
-        bytesConstRef _payload, ErrorRespFunc _errorRespFunc) override;
+    void asyncSendMessageByNodeID(const std::string& _groupID, bcos::crypto::NodeIDPtr _srcNodeID,
+        bcos::crypto::NodeIDPtr _dstNodeID, bytesConstRef _payload,
+        ErrorRespFunc _errorRespFunc) override;
 
     /**
      * @brief: send message to multiple nodes
@@ -110,9 +109,8 @@ public:
      * @param _payload: message payload
      * @return void
      */
-    virtual void asyncSendMessageByNodeIDs(const std::string& _groupID,
-        bcos::crypto::NodeIDPtr _srcNodeID, const bcos::crypto::NodeIDs& _nodeIDs,
-        bytesConstRef _payload) override;
+    void asyncSendMessageByNodeIDs(const std::string& _groupID, bcos::crypto::NodeIDPtr _srcNodeID,
+        const bcos::crypto::NodeIDs& _nodeIDs, bytesConstRef _payload) override;
 
     /**
      * @brief: send broadcast message
@@ -121,8 +119,8 @@ public:
      * @param _payload: message payload
      * @return void
      */
-    virtual void asyncSendBroadcastMessage(const std::string& _groupID,
-        bcos::crypto::NodeIDPtr _srcNodeID, bytesConstRef _payload) override;
+    void asyncSendBroadcastMessage(const std::string& _groupID, bcos::crypto::NodeIDPtr _srcNodeID,
+        bytesConstRef _payload) override;
 
     /**
      * @brief: receive p2p message

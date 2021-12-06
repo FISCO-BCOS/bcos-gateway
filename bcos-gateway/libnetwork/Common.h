@@ -91,7 +91,7 @@ public:
       : m_errorCode(_errorCode), m_msg(_msg){};
 
     virtual int errorCode() const { return m_errorCode; };
-    virtual const char* what() const noexcept override { return m_msg.c_str(); };
+    const char* what() const noexcept override { return m_msg.c_str(); };
     bool operator!() const { return m_errorCode == 0; }
 
     virtual Error::Ptr toError() { return std::make_shared<Error>(errorCode(), m_msg); }

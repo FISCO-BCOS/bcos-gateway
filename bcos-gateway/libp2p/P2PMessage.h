@@ -111,19 +111,19 @@ public:
     virtual ~P2PMessage() {}
 
 public:
-    virtual uint32_t length() const override { return m_length; }
+    uint32_t length() const override { return m_length; }
     virtual void setLength(uint32_t length) { m_length = length; }
 
-    virtual uint16_t version() const override { return m_version; }
+    uint16_t version() const override { return m_version; }
     virtual void setVersion(uint16_t version) { m_version = version; }
 
-    virtual uint16_t packetType() const override { return m_packetType; }
+    uint16_t packetType() const override { return m_packetType; }
     virtual void setPacketType(uint16_t packetType) { m_packetType = packetType; }
 
-    virtual uint32_t seq() const override { return m_seq; }
+    uint32_t seq() const override { return m_seq; }
     virtual void setSeq(uint32_t seq) { m_seq = seq; }
 
-    virtual uint16_t ext() const override { return m_ext; }
+    uint16_t ext() const override { return m_ext; }
     virtual void setExt(uint16_t _ext) { m_ext = _ext; }
 
     P2PMessageOptions::Ptr options() const { return m_options; }
@@ -141,12 +141,9 @@ public:
                (m_packetType == MessageType::BroadcastMessage);
     }
 
-    virtual bool encode(bytes& _buffer) override;
-    virtual ssize_t decode(bytesConstRef _buffer) override;
-    virtual bool isRespPacket() const override
-    {
-        return (m_ext & MessageExtFieldFlag::Response) != 0;
-    }
+    bool encode(bytes& _buffer) override;
+    ssize_t decode(bytesConstRef _buffer) override;
+    bool isRespPacket() const override { return (m_ext & MessageExtFieldFlag::Response) != 0; }
 
 protected:
     uint32_t m_length = 0;

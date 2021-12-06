@@ -206,7 +206,7 @@ void Service::onConnect(
 
 void Service::onDisconnect(NetworkException e, P2PSession::Ptr p2pSession)
 {
-    // handle all registerd handlers
+    // handle all registered handlers
     for (const auto& handler : m_disconnectionHandlers)
     {
         handler(e, p2pSession);

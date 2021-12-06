@@ -33,20 +33,20 @@ public:
 
     using Ptr = std::shared_ptr<Session>;
 
-    virtual void start() override;
-    virtual void disconnect(DisconnectReason _reason) override;
+    void start() override;
+    void disconnect(DisconnectReason _reason) override;
 
-    virtual void asyncSendMessage(
+    void asyncSendMessage(
         Message::Ptr, Options = Options(), SessionCallbackFunc = SessionCallbackFunc()) override;
 
-    virtual NodeIPEndpoint nodeIPEndpoint() const override;
+    NodeIPEndpoint nodeIPEndpoint() const override;
 
-    virtual bool actived() const override;
+    bool actived() const override;
 
     virtual std::weak_ptr<Host> host() { return m_server; }
     virtual void setHost(std::weak_ptr<Host> host);
 
-    virtual std::shared_ptr<SocketFace> socket() override { return m_socket; }
+    std::shared_ptr<SocketFace> socket() override { return m_socket; }
     virtual void setSocket(std::shared_ptr<SocketFace> socket) { m_socket = socket; }
 
     virtual MessageFactory::Ptr messageFactory() const { return m_messageFactory; }
@@ -59,7 +59,7 @@ public:
     {
         return m_messageHandler;
     }
-    virtual void setMessageHandler(
+    void setMessageHandler(
         std::function<void(NetworkException, SessionFace::Ptr, Message::Ptr)> messageHandler)
         override
     {

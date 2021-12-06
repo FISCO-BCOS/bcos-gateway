@@ -459,7 +459,7 @@ void Gateway::onReceiveP2PMessage(const std::string& _groupID, bcos::crypto::Nod
                            << LOG_KV("dstNodeID", _dstNodeID->hex());
 
         auto errorPtr = std::make_shared<Error>(CommonError::NotFoundFrontServiceDispatchMsg,
-            "unable to find front service dispath message to "
+            "unable to find front service dispatch message to "
             "groupID:" +
                 _groupID + " ,nodeID:" + _dstNodeID->hex());
 

@@ -53,7 +53,7 @@ int main(int argc, const char** argv)
         // create frontService
         auto frontService = buildFrontService(groupID, nodeID, configPath);
         auto fsWeakptr = std::weak_ptr<bcos::front::FrontService>(frontService);
-        // register message dispather for front service
+        // register message dispatcher for front service
         frontService->registerModuleMessageDispatcher(
             bcos::protocol::ModuleID::AMOP, [fsWeakptr](bcos::crypto::NodeIDPtr _nodeID,
                                                 const std::string& _id, bytesConstRef _data) {

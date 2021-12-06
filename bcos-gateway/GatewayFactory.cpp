@@ -91,7 +91,7 @@ void GatewayFactory::initCert2PubHexHandler()
     m_certPubHexHandler = handler;
 }
 
-// register the funtion fetch public key from the ssl context
+// register the function fetch public key from the ssl context
 void GatewayFactory::initSSLContextPubHexHandler()
 {
     auto handler = [](X509* x509, std::string& _pubHex) -> bool {
