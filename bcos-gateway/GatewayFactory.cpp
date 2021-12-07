@@ -284,7 +284,8 @@ std::shared_ptr<Gateway> GatewayFactory::buildGateway(GatewayConfig::Ptr _config
         service->setStaticNodes(_config->connectedNodes());
 
         GATEWAY_FACTORY_LOG(INFO) << LOG_DESC("GatewayFactory::init")
-                                  << LOG_KV("myself pub id", pubHex);
+                                  << LOG_KV("myself pub id", pubHex)
+                                  << LOG_KV("rpcService", m_rpcServiceName);
 
         service->setId(pubHex);
         service->setMessageFactory(messageFactory);
@@ -332,7 +333,7 @@ std::shared_ptr<Gateway> GatewayFactory::buildGateway(GatewayConfig::Ptr _config
 bcos::amop::AMOPImpl::Ptr GatewayFactory::buildAMOP(
     P2PInterface::Ptr _network, P2pID const& _p2pNodeID)
 {
-    auto topicManager = std::make_shared<TopicManager>();
+    auto topicManager = std::make_shared<TopicManager>(m_rpcServiceName);
     auto amopMessageFactory = std::make_shared<AMOPMessageFactory>();
     auto requestFactory = std::make_shared<AMOPRequestFactory>();
     return std::make_shared<AMOPImpl>(
@@ -343,7 +344,7 @@ bcos::amop::AMOPImpl::Ptr GatewayFactory::buildLocalAMOP(
     P2PInterface::Ptr _network, P2pID const& _p2pNodeID)
 {
     // Note: must set rpc to the topicManager before start the amop
-    auto topicManager = std::make_shared<LocalTopicManager>();
+    auto topicManager = std::make_shared<LocalTopicManager>(m_rpcServiceName);
     auto amopMessageFactory = std::make_shared<AMOPMessageFactory>();
     auto requestFactory = std::make_shared<AMOPRequestFactory>();
     return std::make_shared<AMOPImpl>(

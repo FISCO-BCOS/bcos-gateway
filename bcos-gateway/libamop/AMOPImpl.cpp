@@ -349,6 +349,7 @@ void AMOPImpl::asyncSendMessageByTopic(const std::string& _topic, bcos::bytesCon
                         auto errorMessage =
                             std::string(amopMsg->data().begin(), amopMsg->data().end());
                         auto errorCode = amopMsg->status();
+                        // tars error
                         if (amopMsg->status() == (uint16_t)(-8) ||
                             amopMsg->status() == (uint16_t)(-7))
                         {

@@ -20,7 +20,8 @@ class GatewayFactory
 {
 public:
     using Ptr = std::shared_ptr<GatewayFactory>;
-    GatewayFactory(std::string const& _chainID) : m_chainID(_chainID)
+    GatewayFactory(std::string const& _chainID, std::string const& _rpcServiceName)
+      : m_chainID(_chainID), m_rpcServiceName(_rpcServiceName)
     {
         initCert2PubHexHandler();
         initSSLContextPubHexHandler();
@@ -76,6 +77,7 @@ private:
 
 private:
     std::string m_chainID;
+    std::string m_rpcServiceName;
 };
 }  // namespace gateway
 }  // namespace bcos
