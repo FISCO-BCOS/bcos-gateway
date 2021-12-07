@@ -34,7 +34,7 @@ BOOST_FIXTURE_TEST_SUITE(GatewayFactoryTest, TestPromptFixture)
 
 BOOST_AUTO_TEST_CASE(test_certPubHexHandler)
 {
-    auto factory = std::make_shared<GatewayFactory>("");
+    auto factory = std::make_shared<GatewayFactory>("", "");
     {
         // sm cert
         std::string cert = "../test/unittests/data/sm_ca/sm_node.crt";
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(test_certPubHexHandler)
 
 BOOST_AUTO_TEST_CASE(test_buildSSLContext)
 {
-    auto factory = std::make_shared<GatewayFactory>("");
+    auto factory = std::make_shared<GatewayFactory>("", "");
 
     {
         // SM SSLContext

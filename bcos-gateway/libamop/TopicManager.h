@@ -37,14 +37,19 @@ class TopicManager : public std::enable_shared_from_this<TopicManager>
 {
 public:
     using Ptr = std::shared_ptr<TopicManager>;
-    TopicManager()
+    TopicManager(std::string const& _rpcServiceName)
     {
         m_timer = std::make_shared<Timer>(CONNECTION_CHECK_PERIOD, "topicChecker");
         m_timer->registerTimeoutHandler(boost::bind(&TopicManager::checkClientConnection, this));
+        m_rpcServiceName = _rpcServiceName;
     }
     virtual ~TopicManager() {}
 
-    virtual void start() { m_timer->start(); }
+    virtual void start()
+    {
+        m_timer->start();
+        notifyRpcToSubscribeTopics();
+    }
     virtual void stop() { m_timer->stop(); }
 
     uint32_t topicSeq() const { return m_topicSeq; }
@@ -165,6 +170,7 @@ public:
     }
 
 protected:
+    virtual void notifyRpcToSubscribeTopics();
     virtual void checkClientConnection();
 
     // m_client2TopicItems lock
@@ -189,6 +195,7 @@ protected:
 
     std::shared_ptr<Timer> m_timer;
     unsigned const int CONNECTION_CHECK_PERIOD = 2000;
+    std::string m_rpcServiceName;
 };
 }  // namespace amop
 }  // namespace bcos

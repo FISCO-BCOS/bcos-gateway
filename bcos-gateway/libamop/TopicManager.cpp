@@ -382,8 +382,45 @@ void TopicManager::queryClientsByTopic(
                     << LOG_KV("clients size", _clients.size());
 }
 
+void TopicManager::notifyRpcToSubscribeTopics()
+{
+    try
+    {
+        auto servicePrx = Application::getCommunicator()->stringToProxy<bcostars::RpcServicePrx>(
+            m_rpcServiceName);
+        auto rpcClient = std::make_shared<bcostars::RpcServiceClient>(servicePrx);
+        vector<EndpointInfo> activeEndPoints;
+        vector<EndpointInfo> nactiveEndPoints;
+        TOPIC_LOG(INFO) << LOG_DESC("notifyRpcToSubscribeTopics")
+                        << LOG_KV("rpcServiceName", m_rpcServiceName)
+                        << LOG_KV("activeEndPoints", activeEndPoints.size());
+        rpcClient->prx()->tars_endpointsAll(activeEndPoints, nactiveEndPoints);
+        for (auto const& endPoint : activeEndPoints)
+        {
+            auto endPointStr = m_rpcServiceName + "@tcp -h " + endPoint.getEndpoint().getHost() +
+                               " -p " +
+                               boost::lexical_cast<std::string>(endPoint.getEndpoint().getPort());
+            auto servicePrx =
+                Application::getCommunicator()->stringToProxy<bcostars::RpcServicePrx>(endPointStr);
+            auto serviceClient = std::make_shared<bcostars::RpcServiceClient>(servicePrx);
+            serviceClient->asyncNotifySubscribeTopic([endPointStr](Error::Ptr _error) {
+                TOPIC_LOG(INFO) << LOG_DESC("asyncNotifySubscribeTopic")
+                                << LOG_KV("endPoint", endPointStr)
+                                << LOG_KV("code", _error ? _error->errorCode() : 0)
+                                << LOG_KV("msg", _error ? _error->errorMessage() : "success");
+            });
+        }
+    }
+    catch (std::exception const& e)
+    {
+        TOPIC_LOG(WARNING) << LOG_DESC("notifyRpcToSubscribeTopics exception")
+                           << LOG_KV("error", boost::diagnostic_information(e));
+    }
+}
+
 void TopicManager::checkClientConnection()
 {
+    m_timer->restart();
     std::vector<std::string> clientsToRemove;
     {
         std::unique_lock lock(x_clientInfo);

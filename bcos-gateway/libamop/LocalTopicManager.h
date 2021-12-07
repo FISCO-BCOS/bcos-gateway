@@ -28,7 +28,7 @@ class LocalTopicManager : public TopicManager
 {
 public:
     using Ptr = std::shared_ptr<LocalTopicManager>;
-    LocalTopicManager() : TopicManager() {}
+    LocalTopicManager(std::string const& _rpcServiceName) : TopicManager(_rpcServiceName) {}
     ~LocalTopicManager() override {}
 
     void setLocalClient(bcos::rpc::RPCInterface::Ptr _rpc) { m_rpc = _rpc; }
@@ -36,8 +36,8 @@ public:
     {
         return m_rpc;
     }
-    void start() override { m_timer->start(); }
-    void stop() override { m_timer->stop(); }
+    void start() override {}
+    void stop() override {}
 
 private:
     bcos::rpc::RPCInterface::Ptr m_rpc;

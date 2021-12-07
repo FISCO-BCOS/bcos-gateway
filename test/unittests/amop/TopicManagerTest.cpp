@@ -30,7 +30,7 @@ BOOST_FIXTURE_TEST_SUITE(TopicManagerTest, TestPromptFixture)
 
 BOOST_AUTO_TEST_CASE(test_initTopicManager)
 {
-    auto topicManager = std::make_shared<TopicManager>();
+    auto topicManager = std::make_shared<TopicManager>("");
     {
         auto jsonValue = topicManager->queryTopicsSubByClient();
 
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(test_initTopicManager)
 
 BOOST_AUTO_TEST_CASE(test_parseTopicItemsJson)
 {
-    auto topicManager = std::make_shared<TopicManager>();
+    auto topicManager = std::make_shared<TopicManager>("");
     {
         uint32_t topicSeq;
         TopicItems topicItems;
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(test_parseTopicItemsJson)
 
 BOOST_AUTO_TEST_CASE(test_subTopics)
 {
-    auto topicManager = std::make_shared<TopicManager>();
+    auto topicManager = std::make_shared<TopicManager>("");
 
     std::string clientID = "client";
     {
