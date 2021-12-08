@@ -33,7 +33,7 @@ namespace bcos
 {
 namespace amop
 {
-class AMOPImpl : std::enable_shared_from_this<AMOPImpl>
+class AMOPImpl : public std::enable_shared_from_this<AMOPImpl>
 {
 public:
     using Ptr = std::shared_ptr<AMOPImpl>;

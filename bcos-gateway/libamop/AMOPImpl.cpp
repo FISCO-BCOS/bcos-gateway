@@ -292,6 +292,8 @@ bool AMOPImpl::trySendTopicMessageToLocalClient(const std::string& _topic,
                        << LOG_KV("topic", _topic);
         return false;
     }
+    AMOP_LOG(INFO) << LOG_DESC("trySendTopicMessageToLocalClient") << LOG_KV("topic", _topic)
+                   << LOG_KV("clientsSubscribeTopic", clients.size());
     auto self = shared_from_this();
     onReceiveAMOPMessage(m_p2pNodeID, _topic, _data,
         [self, _topic, _respFunc](bytesPointer _response, int16_t _type) {
@@ -299,8 +301,7 @@ bool AMOPImpl::trySendTopicMessageToLocalClient(const std::string& _topic,
             AMOP_LOG(INFO) << LOG_DESC("trySendTopicMessageToLocalClient: receive response")
                            << LOG_KV("topic", _topic);
         });
-    AMOP_LOG(INFO) << LOG_DESC("trySendTopicMessageToLocalClient") << LOG_KV("topic", _topic)
-                   << LOG_KV("clientsSubscribeTopic", clients.size());
+
     return true;
 }
 
