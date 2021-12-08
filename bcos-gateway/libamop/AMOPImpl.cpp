@@ -184,8 +184,14 @@ void AMOPImpl::onReceiveAMOPMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg,
     auto request = m_requestFactory->buildRequest(_msg->data());
     // message seq
     std::string topic = request->topic();
+    onReceiveAMOPMessage(_nodeID, topic, _msg->data(), _responseCallback);
+}
+
+void AMOPImpl::onReceiveAMOPMessage(P2pID const& _nodeID, std::string const& _topic,
+    bytesConstRef _data, std::function<void(bytesPointer, int16_t)> const& _responseCallback)
+{
     std::vector<std::string> clients;
-    m_topicManager->queryClientsByTopic(topic, clients);
+    m_topicManager->queryClientsByTopic(_topic, clients);
     bcos::rpc::RPCInterface::Ptr clientService = nullptr;
     if (!clients.empty())
     {
@@ -205,15 +211,15 @@ void AMOPImpl::onReceiveAMOPMessage(P2pID const& _nodeID, AMOPMessage::Ptr _msg,
             _responseCallback(buffer, MessageType::AMOPMessageType);
         });
         AMOP_LOG(WARNING) << LOG_BADGE("onRecvAMOPMessage")
-                          << LOG_DESC("no client subscribe the topic") << LOG_KV("topic", topic)
+                          << LOG_DESC("no client subscribe the topic") << LOG_KV("topic", _topic)
                           << LOG_KV("nodeID", _nodeID);
         return;
     }
 
-    AMOP_LOG(INFO) << LOG_DESC("onRecvAMOPMessage") << LOG_KV("topic", topic)
+    AMOP_LOG(INFO) << LOG_DESC("onRecvAMOPMessage") << LOG_KV("topic", _topic)
                    << LOG_KV("from", _nodeID);
-    clientService->asyncNotifyAMOPMessage(bcos::rpc::AMOPNotifyMessageType::Unicast, topic,
-        _msg->data(), [this, _responseCallback](Error::Ptr&& _error, bytesPointer _responseData) {
+    clientService->asyncNotifyAMOPMessage(bcos::rpc::AMOPNotifyMessageType::Unicast, _topic, _data,
+        [this, _responseCallback](Error::Ptr&& _error, bytesPointer _responseData) {
             if (!_error || _error->errorCode() == CommonError::SUCCESS)
             {
                 _responseCallback(_responseData, MessageType::WSMessageType);
@@ -274,6 +280,29 @@ void AMOPImpl::onReceiveAMOPBroadcastMessage(P2pID const& _nodeID, AMOPMessage::
     AMOP_LOG(DEBUG) << LOG_DESC("onReceiveAMOPBroadcastMessage") << LOG_KV("nodeID", _nodeID);
 }
 
+bool AMOPImpl::trySendTopicMessageToLocalClient(const std::string& _topic,
+    bcos::bytesConstRef _data,
+    std::function<void(bcos::Error::Ptr&&, int16_t, bytesPointer)> _respFunc)
+{
+    std::vector<std::string> clients;
+    m_topicManager->queryClientsByTopic(_topic, clients);
+    if (clients.size() == 0)
+    {
+        AMOP_LOG(INFO) << LOG_DESC("trySendTopicMessageToLocalClient failed for empty client")
+                       << LOG_KV("topic", _topic);
+        return false;
+    }
+    auto self = shared_from_this();
+    onReceiveAMOPMessage(m_p2pNodeID, _topic, _data,
+        [self, _topic, _respFunc](bytesPointer _response, int16_t _type) {
+            self->onRecvAMOPResponse(_type, _response, _respFunc);
+            AMOP_LOG(INFO) << LOG_DESC("trySendTopicMessageToLocalClient: receive response")
+                           << LOG_KV("topic", _topic);
+        });
+    AMOP_LOG(INFO) << LOG_DESC("trySendTopicMessageToLocalClient") << LOG_KV("topic", _topic)
+                   << LOG_KV("clientsSubscribeTopic", clients.size());
+    return true;
+}
 
 // asyncSendMessage to the given topic
 void AMOPImpl::asyncSendMessageByTopic(const std::string& _topic, bcos::bytesConstRef _data,
@@ -283,6 +312,10 @@ void AMOPImpl::asyncSendMessageByTopic(const std::string& _topic, bcos::bytesCon
     m_topicManager->queryNodeIDsByTopic(_topic, nodeIDs);
     if (nodeIDs.empty())
     {
+        if (trySendTopicMessageToLocalClient(_topic, _data, _respFunc))
+        {
+            return;
+        }
         auto errorPtr = std::make_shared<Error>(CommonError::NotFoundPeerByTopicSendMsg,
             "there has no node subscribe this topic, topic: " + _topic);
         if (_respFunc)
@@ -295,7 +328,8 @@ void AMOPImpl::asyncSendMessageByTopic(const std::string& _topic, bcos::bytesCon
                           << LOG_KV("topic", _topic);
         return;
     }
-    AMOP_LOG(INFO) << LOG_DESC("asyncSendMessageByTopic") << LOG_KV("topic", _topic);
+    AMOP_LOG(INFO) << LOG_DESC("asyncSendMessageByTopic") << LOG_KV("topic", _topic)
+                   << LOG_KV("nodeIDsSize", nodeIDs.size());
     auto buffer = buildAndEncodeMessage(AMOPMessage::Type::AMOPRequest, _data);
 
     class RetrySender : public std::enable_shared_from_this<RetrySender>
@@ -322,6 +356,8 @@ void AMOPImpl::asyncSendMessageByTopic(const std::string& _topic, bcos::bytesCon
                 return;
             }
             auto choosedNodeID = randomChoose(m_nodeIDs);
+            AMOP_LOG(INFO) << LOG_DESC("asyncSendMessageByTopic")
+                           << LOG_KV("choosedNodeID", choosedNodeID);
             // erase in case of select the same node when retry
             m_nodeIDs.erase(m_nodeIDs.begin());
             // try to send message to node
@@ -383,6 +419,36 @@ void AMOPImpl::asyncSendMessageByTopic(const std::string& _topic, bcos::bytesCon
     sender->m_messageFactory = m_messageFactory;
     // send message
     sender->sendMessage();
+}
+
+void AMOPImpl::onRecvAMOPResponse(int16_t _type, bytesPointer _responseData,
+    std::function<void(bcos::Error::Ptr&&, int16_t, bytesPointer)> _callback)
+{
+    bcos::Error::Ptr error = nullptr;
+    if (_type == bcos::gateway::MessageType::AMOPMessageType)
+    {
+        auto amopMsg = m_messageFactory->buildMessage(ref(*_responseData));
+        auto errorMessage = std::string(amopMsg->data().begin(), amopMsg->data().end());
+        auto errorCode = amopMsg->status();
+        // tars error
+        if (amopMsg->status() == (uint16_t)(-8) || amopMsg->status() == (uint16_t)(-7))
+        {
+            errorMessage =
+                "Access to the remote RPC service timed out, please make sure it "
+                "is online";
+            errorCode = -1;
+        }
+        error = std::make_shared<Error>(errorCode, errorMessage);
+
+        AMOP_LOG(INFO) << LOG_DESC("asyncSendMessageByTopic error: receive responseData")
+                       << LOG_KV("status", amopMsg->status()) << LOG_KV("msg", errorMessage);
+    }
+    if (_callback)
+    {
+        AMOP_LOG(INFO) << LOG_DESC("asyncSendMessageByTopic: receive responseData")
+                       << LOG_KV("size", _responseData->size()) << LOG_KV("type", _type);
+        _callback(std::move(error), _type, _responseData);
+    }
 }
 
 void AMOPImpl::asyncSendBroadbastMessageByTopic(
