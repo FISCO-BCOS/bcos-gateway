@@ -33,7 +33,7 @@ namespace bcos
 {
 namespace amop
 {
-class AMOPImpl
+class AMOPImpl : public std::enable_shared_from_this<AMOPImpl>
 {
 public:
     using Ptr = std::shared_ptr<AMOPImpl>;
@@ -135,6 +135,13 @@ protected:
 
 private:
     std::shared_ptr<bytes> buildAndEncodeMessage(uint32_t _type, bcos::bytesConstRef _data);
+    virtual void onReceiveAMOPMessage(bcos::gateway::P2pID const& _nodeID,
+        std::string const& _topic, bytesConstRef _data,
+        std::function<void(bytesPointer, int16_t)> const& _responseCallback);
+    void onRecvAMOPResponse(int16_t _type, bytesPointer _responseData,
+        std::function<void(bcos::Error::Ptr&&, int16_t, bytesPointer)> _callback);
+    bool trySendTopicMessageToLocalClient(const std::string& _topic, bcos::bytesConstRef _data,
+        std::function<void(bcos::Error::Ptr&&, int16_t, bytesPointer)> _respFunc);
 
 private:
     std::shared_ptr<TopicManager> m_topicManager;

@@ -80,9 +80,23 @@ void Session::asyncSendMessage(Message::Ptr message, Options options, SessionCal
                 server->asioInterface()->newTimer(options.timeout);
 
             auto session = std::weak_ptr<Session>(shared_from_this());
-            timeoutHandler->async_wait(boost::bind(&Session::onTimeout, shared_from_this(),
-                boost::asio::placeholders::error, message->seq()));
-
+            auto seq = message->seq();
+            timeoutHandler->async_wait([session, seq](const boost::system::error_code& _error) {
+                try
+                {
+                    auto s = session.lock();
+                    if (!s)
+                    {
+                        return;
+                    }
+                    s->onTimeout(_error, seq);
+                }
+                catch (std::exception const& e)
+                {
+                    SESSION_LOG(WARNING) << LOG_DESC("async_wait exception")
+                                         << LOG_KV("error", boost::diagnostic_information(e));
+                }
+            });
             handler->timeoutHandler = timeoutHandler;
             handler->m_startTime = utcSteadyTime();
         }
